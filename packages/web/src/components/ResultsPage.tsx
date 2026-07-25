@@ -32,6 +32,8 @@ import {
 import Header from './Header';
 import Footer from './Footer';
 import { useAppStore } from '../store/appStore';
+import { exportToJSON, exportToHTML, exportToPDF, createIssue } from '../utils/export';
+import type { ScanResult } from '@accessaudit/core';
 
 interface ResultsPageProps {
   onThemeToggle: () => void;
@@ -58,6 +60,8 @@ interface SingleScanResult {
   moderate: number;
   minor: number;
   violations: Violation[];
+  passedRules: string[];
+  score?: number;
 }
 
 function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
@@ -133,6 +137,34 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
   };
 
   const totalStats = getTotalStats();
+
+  const overallScore = scanResults.length > 0
+    ? Math.round(scanResults.reduce((sum, r) => sum + (r.score || 0), 0) / scanResults.length)
+    : 0;
+
+  const getExportData = () => ({
+    scanId: id || `scan-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    results: scanResults as unknown as ScanResult[],
+    overallScore,
+    ...totalStats,
+  });
+
+  const handleExportJSON = () => {
+    exportToJSON(getExportData());
+  };
+
+  const handleExportHTML = () => {
+    exportToHTML(getExportData());
+  };
+
+  const handleExportPDF = () => {
+    exportToPDF(getExportData());
+  };
+
+  const handleCreateIssue = () => {
+    createIssue(getExportData());
+  };
 
   if (scanResults.length === 0) {
     return (
@@ -302,6 +334,13 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                     value: totalStats.minor,
                     color: theme.palette.info.main,
                   },
+                  {
+                    label: 'Overall Score',
+                    value: `${overallScore}/100`,
+                    color: overallScore >= 80 ? theme.palette.success.main : overallScore >= 60 ? theme.palette.warning.main : theme.palette.error.main,
+                    isScore: true,
+                    scoreValue: overallScore,
+                  },
                 ].map((stat) => (
                   <Grid item xs={6} sm={4} md={2} key={stat.label}>
                     <Paper
@@ -312,12 +351,37 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                         backgroundColor: `${stat.color}5`,
                       }}
                     >
-                      <Typography
-                        variant="h4"
-                        sx={{ fontWeight: 700, color: stat.color, mb: 1 }}
-                      >
-                        {stat.value}
-                      </Typography>
+                      {stat.isScore ? (
+                        <Box>
+                          <Box
+                            sx={{
+                              width: 60,
+                              height: 60,
+                              borderRadius: '50%',
+                              backgroundColor: `${stat.color}20`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              mx: 'auto',
+                              mb: 1,
+                            }}
+                          >
+                            <Typography
+                              variant="h5"
+                              sx={{ fontWeight: 700, color: stat.color }}
+                            >
+                              {stat.scoreValue}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      ) : (
+                        <Typography
+                          variant="h4"
+                          sx={{ fontWeight: 700, color: stat.color, mb: 1 }}
+                        >
+                          {stat.value}
+                        </Typography>
+                      )}
                       <Typography
                         variant="body2"
                         sx={{ color: theme.palette.text.secondary }}
@@ -442,17 +506,48 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                     {currentResult.url}
                   </Typography>
                 </Box>
-                <Chip
-                  label={`${currentResult.critical} Critical / ${currentResult.serious} Serious`}
-                  sx={{
-                    px: 2.5,
-                    py: 1,
-                    backgroundColor: `${theme.palette.error.main}10`,
-                    color: theme.palette.error.main,
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                  }}
-                />
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      backgroundColor: currentResult.score !== undefined && currentResult.score >= 80
+                        ? `${theme.palette.success.main}20`
+                        : currentResult.score !== undefined && currentResult.score >= 60
+                        ? `${theme.palette.warning.main}20`
+                        : `${theme.palette.error.main}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontWeight: 700,
+                        color: currentResult.score !== undefined && currentResult.score >= 80
+                          ? theme.palette.success.main
+                          : currentResult.score !== undefined && currentResult.score >= 60
+                          ? theme.palette.warning.main
+                          : theme.palette.error.main,
+                      }}
+                    >
+                      {currentResult.score || '-'}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={`${currentResult.critical} Critical / ${currentResult.serious} Serious`}
+                    sx={{
+                      px: 2.5,
+                      py: 1,
+                      backgroundColor: `${theme.palette.error.main}10`,
+                      color: theme.palette.error.main,
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                    }}
+                  />
+                </Box>
               </Box>
 
               {currentResult.violations.length > 0 ? (
@@ -643,6 +738,33 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                   </Typography>
                 </Box>
               )}
+
+              {(currentResult.passedRules && currentResult.passedRules.length > 0) && (
+                <Box mt={4}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 600, color: theme.palette.text.secondary, mb: 3 }}
+                  >
+                    Passed Checks ({currentResult.passedRules.length})
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    {currentResult.passedRules.map((ruleId: string) => (
+                      <Chip
+                        key={ruleId}
+                        label={ruleId.replace(/-/g, ' ')}
+                        sx={{
+                          px: 2,
+                          py: 0.5,
+                          backgroundColor: `${theme.palette.success.main}10`,
+                          color: theme.palette.success.main,
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              )}
             </Paper>
 
             <Grid container spacing={6}>
@@ -802,16 +924,17 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                     Export Report
                   </Typography>
                   {[
-                    { label: 'Download PDF', icon: <Download sx={{ fontSize: '16px' }} /> },
-                    { label: 'Download HTML', icon: <Download sx={{ fontSize: '16px' }} /> },
-                    { label: 'Download JSON', icon: <Download sx={{ fontSize: '16px' }} /> },
-                    { label: 'Create issue', icon: <Share sx={{ fontSize: '16px' }} /> },
+                    { label: 'Download PDF', icon: <Download sx={{ fontSize: '16px' }} />, action: () => handleExportPDF() },
+                    { label: 'Download HTML', icon: <Download sx={{ fontSize: '16px' }} />, action: () => handleExportHTML() },
+                    { label: 'Download JSON', icon: <Download sx={{ fontSize: '16px' }} />, action: () => handleExportJSON() },
+                    { label: 'Create issue', icon: <Share sx={{ fontSize: '16px' }} />, action: () => handleCreateIssue() },
                   ].map((item) => (
                     <Button
                       key={item.label}
                       fullWidth
                       variant="outlined"
                       startIcon={item.icon}
+                      onClick={item.action}
                       sx={{
                         justifyContent: 'flex-start',
                         borderRadius: '8px',
@@ -822,12 +945,6 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                       {item.label}
                     </Button>
                   ))}
-                  <Typography
-                    variant="body2"
-                    sx={{ color: theme.palette.text.secondary, mt: 3, fontSize: '12px' }}
-                  >
-                    Available with full access
-                  </Typography>
                 </Paper>
               </Grid>
             </Grid>

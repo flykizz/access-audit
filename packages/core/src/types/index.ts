@@ -129,6 +129,8 @@ export interface ScanResult {
   moderate: number;
   minor: number;
   violations: StaticViolation[];
+  passedRules: string[];
+  score?: number;
 }
 
 export interface RuleResult {

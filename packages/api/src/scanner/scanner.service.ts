@@ -31,11 +31,33 @@ interface MultiPageScanResult {
   serious: number;
   moderate: number;
   minor: number;
+  overallScore: number;
 }
 
 @Injectable()
 export class ScannerService {
   private scanner = new AxeScanner();
+
+  calculateScore(result: ScanResult): number {
+    const weight = {
+      critical: 50,
+      serious: 25,
+      moderate: 15,
+      minor: 10,
+    };
+
+    const totalWeight = (result.critical + result.serious + result.moderate + result.minor) * 100;
+    if (totalWeight === 0) return 100;
+
+    const deduction =
+      result.critical * weight.critical +
+      result.serious * weight.serious +
+      result.moderate * weight.moderate +
+      result.minor * weight.minor;
+
+    const score = Math.max(0, Math.round(100 - deduction));
+    return score;
+  }
 
   getMaxPagesByRole(role: UserRole | null): number {
     if (!role || role === 'guest') return 1;
@@ -55,12 +77,14 @@ export class ScannerService {
 
     try {
       const result = await this.scanner.scan(options.url, rules);
+      result.score = this.calculateScore(result);
       results.push(result);
 
       if (maxPages > 1) {
         for (let i = 1; i < maxPages; i++) {
           try {
             const pageResult = await this.scanner.scan(`${options.url}?page=${i}`, rules);
+            pageResult.score = this.calculateScore(pageResult);
             results.push(pageResult);
           } catch (error) {
             console.error(`Failed to scan page ${i}:`, error);
@@ -78,6 +102,10 @@ export class ScannerService {
     const moderate = results.reduce((sum, r) => sum + r.moderate, 0);
     const minor = results.reduce((sum, r) => sum + r.minor, 0);
 
+    const overallScore = results.length > 0
+      ? Math.round(results.reduce((sum, r) => sum + (r.score || 0), 0) / results.length)
+      : 0;
+
     return {
       results,
       totalPages: results.length,
@@ -86,6 +114,7 @@ export class ScannerService {
       serious,
       moderate,
       minor,
+      overallScore,
     };
   }
 

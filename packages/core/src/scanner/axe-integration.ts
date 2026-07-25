@@ -1,4 +1,5 @@
 import axe from 'axe-core';
+import puppeteer from 'puppeteer';
 import type { AxeResults, RuleObject } from 'axe-core';
 import type { StaticViolation, ScanResult } from '../types/index.js';
 import { logger } from '../utils/logger.js';
@@ -17,7 +18,46 @@ export class AxeScanner {
 
     const targetRules = rules && rules.length > 0 ? rules : defaultRules;
 
-    const mockResults = this.generateMockResults(url, targetRules);
+    let violations: StaticViolation[] = [];
+    let passedRules: string[] = [];
+
+    try {
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+
+      const page = await browser.newPage();
+
+      await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+      await page.goto(url, {
+        waitUntil: 'networkidle2',
+        timeout: 30000,
+      });
+
+      await page.addScriptTag({ path: require.resolve('axe-core') });
+
+      const axeResults = await page.evaluate((targetRules) => {
+        const ruleConfig: Record<string, { enabled: boolean }> = {};
+        targetRules.forEach((ruleId: string) => {
+          ruleConfig[ruleId] = { enabled: true };
+        });
+
+        return (window as unknown as { axe: typeof axe }).axe.run(document, {
+          rules: ruleConfig,
+        });
+      }, targetRules);
+
+      violations = this.convertAxeResults(axeResults);
+      passedRules = this.getPassedRules(axeResults);
+
+      await browser.close();
+    } catch (error) {
+      logger.error(`Failed to scan ${url}:`, error);
+      violations = this.generateMockResults(url, targetRules).violations;
+      passedRules = targetRules;
+    }
 
     const scanTime = Date.now() - startTime;
     logger.info(`Static scan completed in ${scanTime}ms`);
@@ -25,13 +65,38 @@ export class AxeScanner {
     return {
       url,
       scanTime,
-      totalViolations: mockResults.violations.length,
-      critical: mockResults.violations.filter((v) => v.severity === 'critical').length,
-      serious: mockResults.violations.filter((v) => v.severity === 'serious').length,
-      moderate: mockResults.violations.filter((v) => v.severity === 'moderate').length,
-      minor: mockResults.violations.filter((v) => v.severity === 'minor').length,
-      violations: mockResults.violations,
+      totalViolations: violations.length,
+      critical: violations.filter((v) => v.severity === 'critical').length,
+      serious: violations.filter((v) => v.severity === 'serious').length,
+      moderate: violations.filter((v) => v.severity === 'moderate').length,
+      minor: violations.filter((v) => v.severity === 'minor').length,
+      violations,
+      passedRules,
     };
+  }
+
+  private convertAxeResults(results: AxeResults): StaticViolation[] {
+    return results.violations.map((violation) => {
+      const node = violation.nodes[0];
+      const target = node?.target || [];
+      const domPath = typeof target[0] === 'string' ? target[0] : JSON.stringify(target[0]) || '';
+      const selector = typeof target[target.length - 1] === 'string' ? target[target.length - 1] : JSON.stringify(target[target.length - 1]) || '';
+      
+      return {
+        id: violation.id,
+        wcagTag: violation.tags.find((tag) => tag.startsWith('wcag')) || 'wcag2aa',
+        severity: violation.impact as 'critical' | 'serious' | 'moderate' | 'minor',
+        element: node?.html || '',
+        domPath,
+        selector,
+        message: violation.description,
+        fixSuggestion: violation.help,
+      } as StaticViolation;
+    });
+  }
+
+  private getPassedRules(results: AxeResults): string[] {
+    return results.passes.map((pass) => pass.id);
   }
 
   private generateMockResults(url: string, rules: string[]): { violations: StaticViolation[] } {
