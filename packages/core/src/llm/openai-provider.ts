@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { Page } from 'playwright';
 import type { TestType, LLMResult } from '../types/index.js';
 import type { LLMProvider, LLMConfig } from './types.js';
-import { MODEL_PROVIDERS } from './config.js';
+import { resolveConfig } from './config.js';
 import { logger } from '../utils/logger.js';
 
 const PROMPTS: Record<TestType, string> = {
@@ -65,14 +65,7 @@ export class OpenAIProvider implements LLMProvider {
   }
 
   private resolveConfig(config: LLMConfig): LLMConfig {
-    const providerConfig = MODEL_PROVIDERS[config.provider];
-    
-    return {
-      ...config,
-      apiKey: config.apiKey || providerConfig.apiKey,
-      baseUrl: config.baseUrl || providerConfig.baseUrl,
-      model: config.model || providerConfig.model,
-    };
+    return resolveConfig(config);
   }
 
   async analyze(page: Page, type: TestType, target?: string): Promise<LLMResult> {

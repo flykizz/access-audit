@@ -34,7 +34,7 @@ export { StrategyScheduler } from './engine/strategy-scheduler.js';
 export { PathDiscoverer } from './engine/path-discoverer.js';
 
 export type { LLMConfig, LLMProvider, ProviderType } from './llm/types.js';
-export { MODEL_PROVIDERS, llmConfigSchema, validateLLMConfig, getDefaultConfig, getProviderConfig } from './llm/config.js';
+export { MODEL_PROVIDERS, llmConfigSchema, validateLLMConfig, getDefaultConfig, getProviderConfig, getEnvConfig, resolveConfig } from './llm/config.js';
 export { OpenAIProvider } from './llm/openai-provider.js';
 
 export { logger } from './utils/logger.js';

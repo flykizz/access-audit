@@ -19,6 +19,10 @@ export function createAuditCommand(): Command {
     .option('--depth <n>', 'Path discovery depth', '3')
     .option('--max-paths <n>', 'Maximum discovered paths', '10')
     .option('--max-pages <n>', 'Maximum pages for full site scan', '20')
+    .option('--provider <name>', 'LLM provider (doubao, qwen, glm, deepseek, openai)', 'qwen')
+    .option('--api-key <key>', 'LLM API key')
+    .option('--base-url <url>', 'LLM base URL')
+    .option('--model <name>', 'LLM model name')
     .action(async (options) => {
       const spinner = ora('Starting accessibility audit...').start();
 
@@ -110,7 +114,12 @@ export function createAuditCommand(): Command {
 
             if (config.includeBehaviorTest) {
               spinner.text = `Dynamic analysis ${step.url}...`;
-              const agent = new PageAgent();
+              const agent = new PageAgent(undefined, {
+                provider: options.provider as 'doubao' | 'qwen' | 'glm' | 'deepseek' | 'openai',
+                apiKey: options.apiKey,
+                baseUrl: options.baseUrl,
+                model: options.model,
+              });
               result.behaviorResults = [];
               
               for (const testType of config.behaviorTests) {
