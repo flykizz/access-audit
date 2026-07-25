@@ -1,4 +1,4 @@
-import { Page, chromium } from 'playwright';
+import { Page, Browser, chromium } from 'playwright';
 import type { BehaviorTask, BehaviorResult, RuleResult, LLMResult, TestType } from '../types/index.js';
 import type { LLMProvider as CoreLLMProvider, LLMConfig } from '../llm/index.js';
 import { OpenAIProvider, getDefaultConfig } from '../llm/index.js';
@@ -29,6 +29,7 @@ class MockLLMProvider implements CoreLLMProvider {
 
 export class PageAgent {
   private page: Page | null = null;
+  private browser: Browser | null = null;
   private llmProvider: CoreLLMProvider;
   private llmConfig: LLMConfig;
 
@@ -51,8 +52,16 @@ export class PageAgent {
   }
 
   async init(): Promise<void> {
-    const browser = await chromium.launch({ headless: true });
-    this.page = await browser.newPage();
+    this.browser = await chromium.launch({ headless: true });
+    this.page = await this.browser.newPage();
+  }
+
+  async close(): Promise<void> {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+      this.page = null;
+    }
   }
 
   async executeTask(task: BehaviorTask): Promise<BehaviorResult> {

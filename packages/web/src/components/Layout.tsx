@@ -17,7 +17,7 @@ import {
 import {
   Menu as MenuIcon,
   Dashboard,
-  Search as Scan,
+  Search,
   Description as FileText,
   Settings,
   AccountCircle,
@@ -47,7 +47,7 @@ function Layout({ children }: LayoutProps) {
 
   const navItems = [
     { label: 'Dashboard', icon: Dashboard, path: '/' },
-    { label: 'Scan', icon: Scan, path: '/scan' },
+    { label: 'Scan', icon: Search, path: '/scan' },
     { label: 'Reports', icon: FileText, path: '/report' },
     { label: 'Settings', icon: Settings, path: '/settings' },
   ];

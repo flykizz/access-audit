@@ -2,8 +2,8 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import ora from 'ora';
 import fs from 'fs-extra';
-import { AxeScanner, CoverageTracker, PageAgent, PathDiscoverer } from '@accessaudit/core';
-import type { AuditConfig, BehaviorTask, BehaviorResult, ScanResult, GoldenPath } from '@accessaudit/core';
+import { AxeScanner, CoverageTracker, PageAgent, PathDiscoverer, ReportGenerator } from '@accessaudit/core';
+import type { AuditConfig, BehaviorTask, BehaviorResult, ScanResult, GoldenPath, StaticViolation } from '@accessaudit/core';
 
 export function createAuditCommand(): Command {
   const command = new Command('audit')
@@ -53,12 +53,8 @@ export function createAuditCommand(): Command {
         
         spinner.text = `Auditing ${urls.length} URLs...${fullSiteScan ? ' (Full site mode)' : ''}`;
 
-        const allResults: {
-          url: string;
-          scanResult?: ScanResult;
-          behaviorResults?: BehaviorResult[];
-          pathName?: string;
-        }[] = [];
+        const allScanResults: ScanResult[] = [];
+        const allBehaviorResults: BehaviorResult[] = [];
         const coverageTracker = new CoverageTracker();
         const discoveredPaths: GoldenPath[] = [];
 
@@ -96,20 +92,11 @@ export function createAuditCommand(): Command {
           spinner.text = `Analyzing ${fullSiteScan ? 'page' : 'path'}: ${path.name}`;
 
           for (const step of path.steps) {
-            const result: {
-              url: string;
-              scanResult?: ScanResult;
-              behaviorResults?: BehaviorResult[];
-              pathName?: string;
-            } = {
-              url: step.url,
-              pathName: path.name,
-            };
-
             if (config.includeStaticScan) {
               spinner.text = `Static scanning ${step.url}...`;
               const scanner = new AxeScanner();
-              result.scanResult = await scanner.scan(step.url, config.scanRules);
+              const scanResult = await scanner.scan(step.url, config.scanRules);
+              allScanResults.push(scanResult);
             }
 
             if (config.includeBehaviorTest) {
@@ -120,7 +107,6 @@ export function createAuditCommand(): Command {
                 baseUrl: options.baseUrl,
                 model: options.model,
               });
-              result.behaviorResults = [];
               
               for (const testType of config.behaviorTests) {
                 const task: BehaviorTask = {
@@ -130,7 +116,7 @@ export function createAuditCommand(): Command {
                   target: step.url,
                 };
                 const behaviorResult = await agent.executeTask(task);
-                result.behaviorResults.push(behaviorResult);
+                allBehaviorResults.push(behaviorResult);
 
                 if (testType === 'keyboard-reachability') {
                   coverageTracker.updateCoverage('keyboardReachRate', 
@@ -143,9 +129,9 @@ export function createAuditCommand(): Command {
                     behaviorResult.status === 'pass' ? 100 : 50);
                 }
               }
+              
+              await agent.close();
             }
-
-            allResults.push(result);
           }
         }
 
@@ -153,20 +139,34 @@ export function createAuditCommand(): Command {
 
         const outputDir = options.output || options.O || './reports';
         await fs.ensureDir(outputDir);
-        const reportPath = `${outputDir}/audit-report-${Date.now()}.json`;
-        await fs.writeFile(reportPath, JSON.stringify({
-          discoveredPaths,
-          coverage: coverageTracker.getCoverage(),
-          results: allResults,
-          scanMode: fullSiteScan ? 'full-site' : 'path-discovery',
-          totalPagesScanned: allResults.length,
-        }, null, 2));
+
+        const reportGenerator = new ReportGenerator();
+        const jsonReport = await reportGenerator.generate(
+          allScanResults,
+          allBehaviorResults,
+          coverageTracker.getCoverage(),
+          { format: 'json' },
+          fullSiteScan ? 'full-site' : 'path-discovery'
+        );
+        const jsonReportPath = `${outputDir}/audit-report-${Date.now()}.json`;
+        await fs.writeFile(jsonReportPath, typeof jsonReport === 'string' ? jsonReport : JSON.stringify(jsonReport, null, 2));
+
+        const htmlReport = await reportGenerator.generate(
+          allScanResults,
+          allBehaviorResults,
+          coverageTracker.getCoverage(),
+          { format: 'html' },
+          fullSiteScan ? 'full-site' : 'path-discovery'
+        );
+        const htmlReportPath = `${outputDir}/audit-report-${Date.now()}.html`;
+        await fs.writeFile(htmlReportPath, typeof htmlReport === 'string' ? htmlReport : JSON.stringify(htmlReport));
 
         console.log('\n' + chalk.bold('Accessibility Audit Report'));
         console.log('='.repeat(60));
-        console.log(chalk.cyan(`Results saved to: ${reportPath}`));
+        console.log(chalk.cyan(`JSON Report: ${jsonReportPath}`));
+        console.log(chalk.cyan(`HTML Report: ${htmlReportPath}`));
         console.log(chalk.grey(`Scan Mode: ${fullSiteScan ? 'Full Site' : 'Path Discovery'}`));
-        console.log(chalk.grey(`Total ${fullSiteScan ? 'Pages' : 'Paths'} Scanned: ${allResults.length}`));
+        console.log(chalk.grey(`Total Pages Scanned: ${allScanResults.length}`));
         console.log('');
 
         console.log(chalk.bold('📊 Coverage Summary'));
@@ -197,27 +197,32 @@ export function createAuditCommand(): Command {
         }
         console.log('');
 
-        let totalViolations = 0;
-        let passCount = 0;
-        let failCount = 0;
-        
-        allResults.forEach(result => {
-          if (result.scanResult) {
-            totalViolations += result.scanResult.totalViolations;
-          }
-          if (result.behaviorResults) {
-            result.behaviorResults.forEach(br => {
-              if (br.status === 'pass') passCount++;
-              else if (br.status === 'fail') failCount++;
-            });
-          }
-        });
+        const totalViolations = allScanResults.reduce((sum, r) => sum + r.totalViolations, 0);
+        const passCount = allBehaviorResults.filter(br => br.status === 'pass').length;
+        const failCount = allBehaviorResults.filter(br => br.status === 'fail').length;
         
         console.log(chalk.bold('📈 Test Results'));
         console.log('-'.repeat(60));
         console.log(`  Total Violations (Static): ${totalViolations}`);
         console.log(`  Behavior Tests Passed: ${chalk.green(passCount)}`);
         console.log(`  Behavior Tests Failed: ${chalk.red(failCount)}`);
+        console.log('');
+
+        console.log(chalk.bold('📋 Per-Page Violations'));
+        console.log('-'.repeat(60));
+        allScanResults.forEach((scan, index) => {
+          console.log(`  ${index + 1}. ${scan.url}`);
+          if (scan.totalViolations > 0) {
+            console.log(`     Violations: ${scan.critical} critical, ${scan.serious} serious, ${scan.moderate} moderate, ${scan.minor} minor`);
+            scan.violations.forEach(v => {
+              console.log(`       - ${v.severity}: ${v.message}`);
+              console.log(`         DOM Path: ${v.domPath}`);
+              console.log(`         Selector: ${v.selector}`);
+            });
+          } else {
+            console.log(`     ✓ No violations found`);
+          }
+        });
         console.log('');
 
       } catch (error) {

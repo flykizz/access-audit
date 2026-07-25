@@ -43,6 +43,8 @@ export class AxeScanner {
         wcagTag: 'wcag2aa',
         severity: 'critical',
         element: '<button class="btn">Submit</button>',
+        domPath: '/html/body/div[1]/main/section[2]/button[3]',
+        selector: 'main > section:nth-child(2) > button.btn',
         message: 'Element has insufficient color contrast (2.1:1, requires 4.5:1)',
         fixSuggestion: 'Increase text color contrast to at least 4.5:1',
       });
@@ -54,6 +56,8 @@ export class AxeScanner {
         wcagTag: 'wcag2aa',
         severity: 'serious',
         element: '<img src="logo.png">',
+        domPath: '/html/body/header/div/img[1]',
+        selector: 'header > div > img[src="logo.png"]',
         message: 'Image element does not have an alt attribute',
         fixSuggestion: 'Add descriptive alt text to the image element',
       });
@@ -65,6 +69,8 @@ export class AxeScanner {
         wcagTag: 'wcag2aa',
         severity: 'moderate',
         element: '<input type="text" id="username">',
+        domPath: '/html/body/div[2]/form/div[1]/input[1]',
+        selector: 'form > div:nth-child(1) > input#username',
         message: 'Form element does not have an associated label',
         fixSuggestion: 'Add a label element associated with the input',
       });

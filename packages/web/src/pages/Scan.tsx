@@ -46,7 +46,7 @@ function Scan() {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:3000/api/v1/scanner/static', { url });
+      const response = await axios.post('/api/v1/scanner/static', { url });
       const result = response.data.data;
       setScanResult(result);
       addScanResult(result);

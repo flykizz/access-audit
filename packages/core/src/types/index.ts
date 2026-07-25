@@ -12,6 +12,8 @@ export interface StaticViolation {
   wcagTag: string;
   severity: Severity;
   element: string;
+  domPath: string;
+  selector: string;
   message: string;
   fixSuggestion: string;
 }

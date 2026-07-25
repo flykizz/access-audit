@@ -12,6 +12,7 @@ async function bootstrap(): Promise<void> {
     .setDescription('Accessibility audit API for EN 301 549 compliance')
     .setVersion('1.0')
     .addApiKey({ type: 'apiKey', in: 'header', name: 'X-API-Key' }, 'api-key')
+    .addBearerAuth()
     .build();
   
   const document = SwaggerModule.createDocument(app, config);
