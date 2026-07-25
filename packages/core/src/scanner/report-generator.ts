@@ -139,8 +139,7 @@ export class ReportGenerator {
     .violation-severity.serious { background: #fff7ed; color: #ea580c; }
     .violation-severity.moderate { background: #eff6ff; color: #2563eb; }
     .violation-severity.minor { background: #f0fdf4; color: #16a34a; }
-    .violation-message { font-weight: 500; color: #333; margin-bottom: 4px; }
-    .violation-element { font-family: monospace; font-size: 12px; color: #666; margin-bottom: 8px; }
+    .violation-message { font-weight: 500; color: #333; margin-bottom: 8px; }
     .violation-path { font-family: monospace; font-size: 11px; color: #888; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px; word-break: break-all; }
     .violation-selector { font-family: monospace; font-size: 11px; color: #888; background: #f0f0f0; padding: 4px 8px; border-radius: 4px; margin-bottom: 8px; word-break: break-all; }
     .violation-fix { background: #f0fdf4; padding: 10px; border-radius: 6px; font-size: 14px; color: #166534; }
@@ -213,7 +212,6 @@ export class ReportGenerator {
     <span style="font-size:12px;color:#666">${violation.wcagTag}</span>
   </div>
   <div class="violation-message">${violation.message}</div>
-  <div class="violation-element">${violation.element}</div>
   <div class="violation-path">DOM Path: ${violation.domPath}</div>
   <div class="violation-selector">Selector: ${violation.selector}</div>
   <div class="violation-fix">Fix: ${violation.fixSuggestion}</div>

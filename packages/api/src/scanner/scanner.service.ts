@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { AxeScanner, defaultRules, ruleCategories } from '@accessaudit/core';
+import { AxeScanner, defaultRules } from '@accessaudit/core';
 import type { ScanResult } from '@accessaudit/core';
+import type { UserRole } from '../auth/user.entity';
 
 interface StaticScanOptions {
   url: string;
   rules?: string[];
   includeHidden?: boolean;
   timeout?: number;
+  maxPages?: number;
 }
 
 interface RulesResult {
@@ -21,13 +23,70 @@ interface RulesResult {
   total: number;
 }
 
+interface MultiPageScanResult {
+  results: ScanResult[];
+  totalPages: number;
+  totalViolations: number;
+  critical: number;
+  serious: number;
+  moderate: number;
+  minor: number;
+}
+
 @Injectable()
 export class ScannerService {
   private scanner = new AxeScanner();
 
+  getMaxPagesByRole(role: UserRole | null): number {
+    if (!role || role === 'guest') return 1;
+    if (role === 'user') return 3;
+    if (role === 'vip') return 50;
+    return 1;
+  }
+
   async staticScan(options: StaticScanOptions): Promise<ScanResult> {
     const rules = options.rules && options.rules.length > 0 ? options.rules : defaultRules;
     return this.scanner.scan(options.url, rules);
+  }
+
+  async multiPageScan(options: StaticScanOptions, maxPages: number): Promise<MultiPageScanResult> {
+    const rules = options.rules && options.rules.length > 0 ? options.rules : defaultRules;
+    const results: ScanResult[] = [];
+
+    try {
+      const result = await this.scanner.scan(options.url, rules);
+      results.push(result);
+
+      if (maxPages > 1) {
+        for (let i = 1; i < maxPages; i++) {
+          try {
+            const pageResult = await this.scanner.scan(`${options.url}?page=${i}`, rules);
+            results.push(pageResult);
+          } catch (error) {
+            console.error(`Failed to scan page ${i}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Scan failed:', error);
+      throw error;
+    }
+
+    const totalViolations = results.reduce((sum, r) => sum + r.totalViolations, 0);
+    const critical = results.reduce((sum, r) => sum + r.critical, 0);
+    const serious = results.reduce((sum, r) => sum + r.serious, 0);
+    const moderate = results.reduce((sum, r) => sum + r.moderate, 0);
+    const minor = results.reduce((sum, r) => sum + r.minor, 0);
+
+    return {
+      results,
+      totalPages: results.length,
+      totalViolations,
+      critical,
+      serious,
+      moderate,
+      minor,
+    };
   }
 
   getRules(category?: string): RulesResult {

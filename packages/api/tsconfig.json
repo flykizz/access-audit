@@ -18,7 +18,12 @@
     "baseUrl": ".",
     "paths": {
       "@accessaudit/core": ["../core/dist"]
-    }
+    },
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "declaration": true
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

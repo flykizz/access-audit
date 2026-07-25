@@ -14,7 +14,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useAppStore } from '../store/appStore';
-import axios from 'axios';
+import api from '../utils/axios';
 
 interface ScanResult {
   url: string;
@@ -46,7 +46,7 @@ function Scan() {
     setError('');
 
     try {
-      const response = await axios.post('/api/v1/scanner/static', { url });
+      const response = await api.post('/v1/scanner/static', { url });
       const result = response.data.data;
       setScanResult(result);
       addScanResult(result);

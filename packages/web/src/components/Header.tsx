@@ -58,12 +58,22 @@ function Header({ onThemeToggle, isDarkMode }: HeaderProps) {
     >
       <Toolbar
         sx={{
+          width: 'calc(100% - 48px)',
           maxWidth: '1440px',
           mx: 'auto',
           px: { xs: 2, sm: 4, md: 6 },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 8 }}>
+        <Box
+          component={Link}
+          to="/"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            textDecoration: 'none',
+            cursor: 'pointer',
+          }}
+        >
           <svg
             width="32"
             height="32"
@@ -94,7 +104,7 @@ function Header({ onThemeToggle, isDarkMode }: HeaderProps) {
           </Typography>
         </Box>
 
-        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
+        <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1, ml: 8 }}>
           {navItems.map((item) => (
             <Button
               key={item.label}

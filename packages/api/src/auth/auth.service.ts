@@ -1,11 +1,19 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './user.entity';
+import { User, AuthProvider } from './user.entity';
 import { SignupDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, AuthResponse } from './auth.dto';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
+
+interface OAuthUserDto {
+  email: string;
+  name: string;
+  provider: AuthProvider;
+  providerId: string;
+  avatarUrl?: string | null;
+}
 
 @Injectable()
 export class AuthService {
@@ -53,6 +61,10 @@ export class AuthService {
     const user = await this.userRepository.findOne({ where: { email } });
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.password) {
+      throw new UnauthorizedException('Please sign in using your OAuth provider');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -128,5 +140,48 @@ export class AuthService {
 
   async getUserById(userId: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { id: userId } });
+  }
+
+  async validateOAuthUser(oauthUser: OAuthUserDto): Promise<User> {
+    const { email, name, provider, providerId, avatarUrl } = oauthUser;
+
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (existingUser) {
+      if (existingUser.provider === provider && existingUser.providerId === providerId) {
+        return existingUser;
+      }
+      existingUser.provider = provider;
+      existingUser.providerId = providerId;
+      existingUser.avatarUrl = avatarUrl || existingUser.avatarUrl;
+      return this.userRepository.save(existingUser);
+    }
+
+    const user = this.userRepository.create({
+      name,
+      email,
+      password: null,
+      provider,
+      providerId,
+      avatarUrl,
+      verified: true,
+      credits: 3,
+    });
+
+    return this.userRepository.save(user);
+  }
+
+  async loginOAuth(user: User): Promise<AuthResponse> {
+    const accessToken = this.jwtService.sign({ userId: user.id });
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      credits: user.credits,
+      accessToken,
+    };
   }
 }

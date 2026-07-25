@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -12,6 +13,7 @@ import { useTheme } from '@mui/material/styles';
 
 function Hero() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [inputValue, setInputValue] = useState('');
 
   const quickActions = [
@@ -31,7 +33,7 @@ function Hero() {
   ];
 
   const handleRunTest = () => {
-    console.log('Running test with:', inputValue);
+    navigate('/scan');
   };
 
   const handleExampleClick = (label: string) => {

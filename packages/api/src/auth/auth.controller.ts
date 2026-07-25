@@ -1,7 +1,9 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, UseGuards, Req, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { SignupDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, AuthResponse } from './auth.dto';
+import { AuthGuard } from '@nestjs/passport';
+import type { Request, Response } from 'express';
 
 @Controller('auth')
 @ApiTags('Authentication')
@@ -45,5 +47,35 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid verification token' })
   async verifyEmail(@Query('token') token: string): Promise<{ message: string }> {
     return this.authService.verifyEmail(token);
+  }
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Redirect to Google for authentication' })
+  async googleAuth() {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google OAuth callback' })
+  async googleAuthCallback(@Req() req: Request, @Res() res: Response) {
+    const user = req.user as any;
+    const authResponse = await this.authService.loginOAuth(user);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/auth/callback?token=${authResponse.accessToken}&user=${encodeURIComponent(JSON.stringify(authResponse))}`);
+  }
+
+  @Get('github')
+  @UseGuards(AuthGuard('github'))
+  @ApiOperation({ summary: 'Redirect to GitHub for authentication' })
+  async githubAuth() {}
+
+  @Get('github/callback')
+  @UseGuards(AuthGuard('github'))
+  @ApiOperation({ summary: 'GitHub OAuth callback' })
+  async githubAuthCallback(@Req() req: Request, @Res() res: Response) {
+    const user = req.user as any;
+    const authResponse = await this.authService.loginOAuth(user);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/auth/callback?token=${authResponse.accessToken}&user=${encodeURIComponent(JSON.stringify(authResponse))}`);
   }
 }

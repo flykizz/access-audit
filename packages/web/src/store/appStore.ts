@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { ScanResult, BehaviorResult, CoverageData, AuditTask } from '@accessaudit/core';
 
 interface AppState {
@@ -8,6 +9,7 @@ interface AppState {
   currentTask: AuditTask | null;
   tasks: AuditTask[];
   addScanResult: (result: ScanResult) => void;
+  addScanResults: (results: ScanResult[]) => void;
   addBehaviorResult: (result: BehaviorResult) => void;
   setCoverageData: (data: CoverageData) => void;
   setCurrentTask: (task: AuditTask) => void;
@@ -16,19 +18,27 @@ interface AppState {
   clearResults: () => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  scanResults: [],
-  behaviorResults: [],
-  coverageData: null,
-  currentTask: null,
-  tasks: [],
-  addScanResult: (result) => set((state) => ({ scanResults: [...state.scanResults, result] })),
-  addBehaviorResult: (result) => set((state) => ({ behaviorResults: [...state.behaviorResults, result] })),
-  setCoverageData: (data) => set({ coverageData: data }),
-  setCurrentTask: (task) => set({ currentTask: task }),
-  addTask: (task) => set((state) => ({ tasks: [...state.tasks, task] })),
-  updateTask: (taskId, updates) => set((state) => ({
-    tasks: state.tasks.map((t) => (t.taskId === taskId ? { ...t, ...updates } : t)),
-  })),
-  clearResults: () => set({ scanResults: [], behaviorResults: [], coverageData: null }),
-}));
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      scanResults: [],
+      behaviorResults: [],
+      coverageData: null,
+      currentTask: null,
+      tasks: [],
+      addScanResult: (result) => set((state) => ({ scanResults: [...state.scanResults, result] })),
+      addScanResults: (results) => set((state) => ({ scanResults: [...state.scanResults, ...results] })),
+      addBehaviorResult: (result) => set((state) => ({ behaviorResults: [...state.behaviorResults, result] })),
+      setCoverageData: (data) => set({ coverageData: data }),
+      setCurrentTask: (task) => set({ currentTask: task }),
+      addTask: (task) => set((state) => ({ tasks: [...state.tasks, task] })),
+      updateTask: (taskId, updates) => set((state) => ({
+        tasks: state.tasks.map((t) => (t.taskId === taskId ? { ...t, ...updates } : t)),
+      })),
+      clearResults: () => set({ scanResults: [], behaviorResults: [], coverageData: null }),
+    }),
+    {
+      name: 'accessaudit-app-store',
+    }
+  )
+);

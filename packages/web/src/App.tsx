@@ -17,6 +17,11 @@ import Signup from './components/Signup';
 import Login from './components/Login';
 import ForgotPassword from './components/ForgotPassword';
 import Docs from './components/Docs';
+import ScanPage from './components/ScanPage';
+import ResultsPage from './components/ResultsPage';
+import TermsOfService from './components/TermsOfService';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import OAuthCallback from './components/OAuthCallback';
 import { theme, darkTheme } from './theme';
 
 function Home() {
@@ -61,6 +66,26 @@ function App() {
         <Route
           path="/docs"
           element={<Docs onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />}
+        />
+        <Route
+          path="/scan"
+          element={<ScanPage onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />}
+        />
+        <Route
+          path="/results/:id"
+          element={<ResultsPage onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />}
+        />
+        <Route
+          path="/terms-of-service"
+          element={<TermsOfService />}
+        />
+        <Route
+          path="/privacy-policy"
+          element={<PrivacyPolicy />}
+        />
+        <Route
+          path="/auth/callback"
+          element={<OAuthCallback />}
         />
         <Route
           path="/"

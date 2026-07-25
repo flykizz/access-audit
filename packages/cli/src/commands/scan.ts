@@ -127,7 +127,6 @@ function printHtmlReport(result: {
     ${result.violations.map(v => `
     <div class="violation ${v.severity}">
       <p><span class="severity ${v.severity}">${v.severity}</span> ${v.message}</p>
-      <p><strong>Element:</strong> ${v.element}</p>
       <div class="fix"><strong>Fix Suggestion:</strong> ${v.fixSuggestion}</div>
     </div>
     `).join('')}
