@@ -1,0 +1,32 @@
+{
+  "name": "accessaudit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@9.0.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "test": "turbo test",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write \"**/*.ts\" \"**/*.tsx\"",
+    "scan": "npm run scan --workspace=@accessaudit/cli",
+    "audit": "node packages/cli/dist/index.js audit",
+    "start:api": "npm start --workspace=@accessaudit/api",
+    "start:web": "npm run dev --workspace=@accessaudit/web"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.45.0",
+    "prettier": "^3.0.0",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
+    "turbo": "^1.10.0",
+    "typescript": "^5.1.6"
+  }
+}

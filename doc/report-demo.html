@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AccessAudit - EN 301 549 无障碍合规审计报告</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 1rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .info-item svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .score-card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .score-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .score-header h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .score-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .score-badge.high {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .score-badge.medium {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .score-badge.low {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .score-circle {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+        }
+
+        .circle {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .circle svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: #e2e8f0;
+            stroke-width: 12;
+        }
+
+        .circle-progress {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .circle-content {
+            position: absolute;
+            text-align: center;
+        }
+
+        .circle-content .value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .circle-content .label {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        .score-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .breakdown-item {
+            background: var(--bg);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+
+        .breakdown-item .value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .breakdown-item .label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        .wcag-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .wcag-card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+        }
+
+        .wcag-card.perceivable { border-left-color: var(--primary); }
+        .wcag-card.operable { border-left-color: var(--success); }
+        .wcag-card.understandable { border-left-color: var(--warning); }
+        .wcag-card.robust { border-left-color: var(--info); }
+
+        .wcag-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .wcag-card .icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .wcag-card.perceivable .icon { background: var(--primary); }
+        .wcag-card.operable .icon { background: var(--success); }
+        .wcag-card.understandable .icon { background: var(--warning); }
+        .wcag-card.robust .icon { background: var(--info); }
+
+        .wcag-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .wcag-item:last-child { border-bottom: none; }
+
+        .wcag-item .name { color: var(--text); }
+        .wcag-item .status { font-weight: 600; }
+        .wcag-item .status.pass { color: var(--success); }
+        .wcag-item .status.fail { 
+            color: var(--danger); 
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .wcag-item .status.fail::after {
+            content: '?';
+            width: 16px;
+            height: 16px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            font-size: 0.6rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .popover {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 1000;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            box-shadow: var(--shadow-lg);
+            padding: 1rem;
+            width: 320px;
+            margin-top: 0.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+
+        .wcag-item:hover .popover,
+        .wcag-item:focus-within .popover {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .popover::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 20px;
+            width: 16px;
+            height: 16px;
+            background: var(--card-bg);
+            border-left: 1px solid var(--border);
+            border-top: 1px solid var(--border);
+            transform: rotate(45deg);
+        }
+
+        .popover h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .popover-section {
+            margin-bottom: 0.75rem;
+        }
+
+        .popover-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .popover-section .label {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+
+        .popover-section .value {
+            font-size: 0.825rem;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .popover-section .value code {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.7rem;
+        }
+
+        .popover-section .location {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .popover-section .suggestion {
+            background: rgba(16, 185, 129, 0.05);
+            border-left: 2px solid var(--success);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.775rem;
+        }
+
+        .popover-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 20px;
+            height: 20px;
+            background: var(--bg);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.7rem;
+            color: var(--text-light);
+            transition: background 0.2s;
+        }
+
+        .popover-close:hover {
+            background: var(--border);
+        }
+
+        .violation-list {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .violation-list h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .violation-item {
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: box-shadow 0.2s;
+        }
+
+        .violation-item:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .violation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .violation-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .violation-tag {
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .violation-tag.critical { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .violation-tag.important { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+        .violation-tag.moderate { background: rgba(59, 130, 246, 0.1); color: var(--primary); }
+
+        .violation-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .detail-item .label {
+            font-size: 0.7rem;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .detail-item .value {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .violation-code {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Fira Code', 'Monaco', 'Consolas', monospace;
+            font-size: 0.8rem;
+            overflow-x: auto;
+            margin-bottom: 1rem;
+        }
+
+        .violation-suggestion {
+            background: rgba(16, 185, 129, 0.05);
+            border-left: 3px solid var(--success);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text);
+        }
+
+        .violation-suggestion strong {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .checklist {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .checklist h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .checklist-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: var(--bg);
+            border-radius: 0.5rem;
+        }
+
+        .checklist-item .checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .checklist-item .checkbox.pass {
+            background: var(--success);
+        }
+
+        .checklist-item .checkbox.fail {
+            background: var(--danger);
+        }
+
+        .checklist-item .checkbox svg {
+            width: 12px;
+            height: 12px;
+            fill: white;
+        }
+
+        .checklist-item .text {
+            font-size: 0.875rem;
+            color: var(--text);
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .chart-container h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart {
+            height: 250px;
+            position: relative;
+        }
+
+        .chart-bars {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 100%;
+            padding-bottom: 2rem;
+        }
+
+        .chart-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            height: 100%;
+        }
+
+        .chart-bar {
+            width: 40px;
+            border-radius: 8px 8px 0 0;
+            transition: height 0.5s ease;
+            position: relative;
+        }
+
+        .chart-bar:hover::after {
+            content: attr(data-value);
+            position: absolute;
+            top: -2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        .chart-bar.static { background: var(--primary); }
+        .chart-bar.behavior { background: var(--success); }
+        .chart-bar.total { background: linear-gradient(180deg, var(--primary) 0%, var(--success) 100%); }
+
+        .chart-labels {
+            display: flex;
+            justify-content: space-between;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .chart-label {
+            flex: 1;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .chart-y-axis {
+            position: absolute;
+            left: -40px;
+            top: 0;
+            bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: var(--text-light);
+        }
+
+        .footer {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 1.5rem 2rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+
+        .footer .disclaimer {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 2rem 1rem;
+            }
+
+            .header-info {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .score-breakdown {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .wcag-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .violation-details {
+                grid-template-columns: 1fr;
+            }
+
+            .checklist-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-bar {
+                width: 25px;
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .delay-500 { animation-delay: 0.5s; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header animate-fade-in-up">
+            <h1>AccessAudit 无障碍合规审计报告</h1>
+            <p class="subtitle">EN 301 549 / WCAG 2.1 Level AA 合规检测</p>
+            <div class="header-info">
+                <div class="info-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+                        <path d="M16 21h5v-5"/>
+                    </svg>
+                    <span>审计对象: www.example-eu.com</span>
+                </div>
+                <div class="info-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <span>审计时间: 2026-07-24 14:30:00</span>
+                </div>
+                <div class="info-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                    </svg>
+                    <span>审计版本: v2.1.0</span>
+                </div>
+                <div class="info-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 12l2 2 4-4"/>
+                        <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                    <span>合规标准: WCAG 2.1 AA / EN 301 549</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="score-card animate-fade-in-up delay-100">
+            <div class="score-header">
+                <h2>综合合规评分</h2>
+                <span class="score-badge medium">需要改进</span>
+            </div>
+            <div class="score-circle">
+                <div class="circle">
+                    <svg viewBox="0 0 200 200">
+                        <circle cx="100" cy="100" r="80" class="circle-bg"/>
+                        <circle 
+                            cx="100" cy="100" r="80" 
+                            class="circle-progress" 
+                            style="stroke: var(--warning); stroke-dasharray: 502.65; stroke-dashoffset: 125.66;"
+                        />
+                    </svg>
+                    <div class="circle-content">
+                        <div class="value">75</div>
+                        <div class="label">合规评分</div>
+                    </div>
+                </div>
+            </div>
+            <div class="score-breakdown">
+                <div class="breakdown-item">
+                    <div class="value">82</div>
+                    <div class="label">静态扫描得分</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="value">65</div>
+                    <div class="label">行为测试得分</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="value">12</div>
+                    <div class="label">严重违规</div>
+                </div>
+                <div class="breakdown-item">
+                    <div class="value">28</div>
+                    <div class="label">中等违规</div>
+                </div>
+            </div>
+        </div>
+
+        <h2 class="animate-fade-in-up delay-200" style="margin-bottom: 1.5rem; font-size: 1.25rem;">WCAG 四大原则概览</h2>
+        <div class="wcag-grid">
+            <div class="wcag-card perceivable animate-fade-in-up delay-200">
+                <h3><span class="icon">P</span> Perceivable (可感知)</h3>
+                <div class="wcag-item"><span class="name">1.1.1 非文本内容</span><span class="status pass">通过</span></div>
+                <div class="wcag-item"><span class="name">1.2.1 音频-only</span><span class="status pass">通过</span></div>
+                <div class="wcag-item">
+                    <span class="name">1.3.1 信息和关系</span><span class="status fail">失败</span>
+                    <div class="popover">
+                        <button class="popover-close" onclick="this.parentElement.style.display='none'">×</button>
+                        <h4>1.3.1 Info and Relationships</h4>
+                        <div class="popover-section">
+                            <span class="label">失败位置</span>
+                            <span class="value location">/register - 注册表单</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">问题描述</span>
+                            <span class="value">表单字段缺少正确的 label 关联，使用了 placeholder 代替 label 元素</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">失败代码</span>
+                            <span class="value"><code>&lt;input type="email" placeholder="电子邮箱"&gt;</code></span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">优化建议</span>
+                            <span class="value suggestion">添加 &lt;label&gt; 元素并使用 for 属性关联，或使用 aria-label/aria-labelledby</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="wcag-item"><span class="name">1.4.1 使用颜色</span><span class="status pass">通过</span></div>
+                <div class="wcag-item">
+                    <span class="name">1.4.3 对比度(最小)</span><span class="status fail">失败</span>
+                    <div class="popover">
+                        <button class="popover-close" onclick="this.parentElement.style.display='none'">×</button>
+                        <h4>1.4.3 Contrast (Minimum)</h4>
+                        <div class="popover-section">
+                            <span class="label">失败位置</span>
+                            <span class="value location">全站 - 页脚文字</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">问题描述</span>
+                            <span class="value">文本颜色 #888888 与白色背景对比度仅 3.2:1，低于要求的 4.5:1</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">失败代码</span>
+                            <span class="value"><code>.footer-text { color: #888888; }</code></span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">优化建议</span>
+                            <span class="value suggestion">将文本颜色加深至至少 #4a4a4a，确保对比度达到 4.5:1</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="wcag-card operable animate-fade-in-up delay-300">
+                <h3><span class="icon">O</span> Operable (可操作)</h3>
+                <div class="wcag-item">
+                    <span class="name">2.1.1 键盘</span><span class="status fail">失败</span>
+                    <div class="popover">
+                        <button class="popover-close" onclick="this.parentElement.style.display='none'">×</button>
+                        <h4>2.1.1 Keyboard</h4>
+                        <div class="popover-section">
+                            <span class="label">失败位置</span>
+                            <span class="value location">/checkout - 结账页面</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">问题描述</span>
+                            <span class="value">部分交互元素（如自定义按钮）无法通过键盘访问</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">失败代码</span>
+                            <span class="value"><code>&lt;div class="custom-btn"&gt;提交&lt;/div&gt;</code></span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">优化建议</span>
+                            <span class="value suggestion">使用原生 button 元素，或添加 <code>tabindex="0"</code> 和 <code>role="button"</code></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="wcag-item">
+                    <span class="name">2.1.2 无键盘陷阱</span><span class="status fail">失败</span>
+                    <div class="popover">
+                        <button class="popover-close" onclick="this.parentElement.style.display='none'">×</button>
+                        <h4>2.1.2 No Keyboard Trap</h4>
+                        <div class="popover-section">
+                            <span class="label">失败位置</span>
+                            <span class="value location">/login - 登录弹窗</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">问题描述</span>
+                            <span class="value">模态对话框中按 Tab 键焦点无法循环，导致键盘用户被困在弹窗内</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">失败代码</span>
+                            <span class="value"><code>&lt;div role="dialog"&gt;...&lt;/div&gt;</code></span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">优化建议</span>
+                            <span class="value suggestion">实现焦点陷阱逻辑，确保 Tab 键在 modal 内循环，Shift+Tab 返回上一个元素</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="wcag-item"><span class="name">2.4.1 绕过区块</span><span class="status pass">通过</span></div>
+                <div class="wcag-item">
+                    <span class="name">2.4.3 焦点顺序</span><span class="status fail">失败</span>
+                    <div class="popover">
+                        <button class="popover-close" onclick="this.parentElement.style.display='none'">×</button>
+                        <h4>2.4.3 Focus Order</h4>
+                        <div class="popover-section">
+                            <span class="label">失败位置</span>
+                            <span class="value location">/checkout - Modal 弹窗</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">问题描述</span>
+                            <span class="value">关闭 modal 后焦点未返回到原始触发按钮，破坏了操作连续性</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">失败代码</span>
+                            <span class="value"><code>&lt;button class="close-btn"&gt;关闭&lt;/button&gt;</code></span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">优化建议</span>
+                            <span class="value suggestion">在关闭 modal 后调用 <code>triggerButton.focus()</code> 将焦点返回</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="wcag-item"><span class="name">2.4.7 焦点可见</span><span class="status pass">通过</span></div>
+            </div>
+            <div class="wcag-card understandable animate-fade-in-up delay-400">
+                <h3><span class="icon">U</span> Understandable (可理解)</h3>
+                <div class="wcag-item"><span class="name">3.1.1 语言</span><span class="status pass">通过</span></div>
+                <div class="wcag-item"><span class="name">3.2.1 聚焦</span><span class="status pass">通过</span></div>
+                <div class="wcag-item"><span class="name">3.2.2 输入</span><span class="status pass">通过</span></div>
+                <div class="wcag-item">
+                    <span class="name">3.3.1 错误识别</span><span class="status fail">失败</span>
+                    <div class="popover">
+                        <button class="popover-close" onclick="this.parentElement.style.display='none'">×</button>
+                        <h4>3.3.1 Error Identification</h4>
+                        <div class="popover-section">
+                            <span class="label">失败位置</span>
+                            <span class="value location">/register - 表单提交</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">问题描述</span>
+                            <span class="value">表单验证错误消息未关联到对应字段，屏幕阅读器无法正确播报</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">失败代码</span>
+                            <span class="value"><code>&lt;div class="error"&gt;邮箱格式错误&lt;/div&gt;</code></span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">优化建议</span>
+                            <span class="value suggestion">使用 <code>aria-invalid="true"</code> 和 <code>aria-describedby</code> 关联错误消息</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="wcag-item"><span class="name">3.3.2 标签或指令</span><span class="status pass">通过</span></div>
+            </div>
+            <div class="wcag-card robust animate-fade-in-up delay-500">
+                <h3><span class="icon">R</span> Robust (健壮)</h3>
+                <div class="wcag-item"><span class="name">4.1.1 解析</span><span class="status pass">通过</span></div>
+                <div class="wcag-item">
+                    <span class="name">4.1.2 名称、角色、值</span><span class="status fail">失败</span>
+                    <div class="popover">
+                        <button class="popover-close" onclick="this.parentElement.style.display='none'">×</button>
+                        <h4>4.1.2 Name, Role, Value</h4>
+                        <div class="popover-section">
+                            <span class="label">失败位置</span>
+                            <span class="value location">全站 - 自定义组件</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">问题描述</span>
+                            <span class="value">部分自定义按钮缺少正确的 ARIA 属性，辅助技术无法识别其角色和状态</span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">失败代码</span>
+                            <span class="value"><code>&lt;div onclick="..."&gt;点击&lt;/div&gt;</code></span>
+                        </div>
+                        <div class="popover-section">
+                            <span class="label">优化建议</span>
+                            <span class="value suggestion">添加 <code>role="button"</code>、<code>aria-label</code> 和适当的状态属性</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="wcag-item"><span class="name">4.1.3 状态消息</span><span class="status pass">通过</span></div>
+            </div>
+        </div>
+
+        <div class="violation-list animate-fade-in-up delay-200">
+            <h2>🔴 严重违规 (Critical)</h2>
+            <div class="violation-item">
+                <div class="violation-header">
+                    <span class="violation-title">Modal 关闭后焦点未回弹到触发按钮</span>
+                    <span class="violation-tag critical">Critical</span>
+                </div>
+                <div class="violation-details">
+                    <div class="detail-item"><span class="label">WCAG 条款</span><span class="value">2.4.3 Focus Order</span></div>
+                    <div class="detail-item"><span class="label">影响范围</span><span class="value">全局</span></div>
+                    <div class="detail-item"><span class="label">检测类型</span><span class="value">行为测试</span></div>
+                    <div class="detail-item"><span class="label">页面 URL</span><span class="value">/checkout</span></div>
+                </div>
+                <div class="violation-code">&lt;button class="modal-trigger"&gt;打开对话框&lt;/button&gt;
+&lt;div role="dialog" aria-modal="true"&gt;
+  &lt;button class="close-btn"&gt;关闭&lt;/button&gt;
+&lt;/div&gt;</div>
+                <div class="violation-suggestion"><strong>修复建议:</strong> 在关闭 modal 后，使用 JavaScript 将焦点返回到原始触发按钮。示例: <code>triggerButton.focus()</code></div>
+            </div>
+            <div class="violation-item">
+                <div class="violation-header">
+                    <span class="violation-title">模态对话框中存在键盘陷阱</span>
+                    <span class="violation-tag critical">Critical</span>
+                </div>
+                <div class="violation-details">
+                    <div class="detail-item"><span class="label">WCAG 条款</span><span class="value">2.1.2 No Keyboard Trap</span></div>
+                    <div class="detail-item"><span class="label">影响范围</span><span class="value">登录弹窗</span></div>
+                    <div class="detail-item"><span class="label">检测类型</span><span class="value">行为测试</span></div>
+                    <div class="detail-item"><span class="label">页面 URL</span><span class="value">/login</span></div>
+                </div>
+                <div class="violation-code">&lt;div role="dialog"&gt;
+  &lt;input type="text" placeholder="用户名"&gt;
+  &lt;input type="password" placeholder="密码"&gt;
+  &lt;!-- 缺少焦点循环逻辑 --&gt;
+&lt;/div&gt;</div>
+                <div class="violation-suggestion"><strong>修复建议:</strong> 实现焦点陷阱逻辑，确保在 modal 中按 Tab 键时焦点循环在 modal 内部。当焦点到达最后一个可聚焦元素时，按 Tab 应返回到第一个元素。</div>
+            </div>
+            <div class="violation-item">
+                <div class="violation-header">
+                    <span class="violation-title">表单字段缺少 label 关联</span>
+                    <span class="violation-tag critical">Critical</span>
+                </div>
+                <div class="violation-details">
+                    <div class="detail-item"><span class="label">WCAG 条款</span><span class="value">1.3.1 Info and Relationships</span></div>
+                    <div class="detail-item"><span class="label">影响范围</span><span class="value">注册表单</span></div>
+                    <div class="detail-item"><span class="label">检测类型</span><span class="value">静态扫描</span></div>
+                    <div class="detail-item"><span class="label">页面 URL</span><span class="value">/register</span></div>
+                </div>
+                <div class="violation-code">&lt;input type="email" placeholder="电子邮箱"&gt;
+&lt;input type="password" placeholder="密码"&gt;</div>
+                <div class="violation-suggestion"><strong>修复建议:</strong> 为每个表单字段添加 &lt;label&gt; 元素并使用 for 属性关联，或使用 aria-label/aria-labelledby。示例: <code>&lt;label for="email"&gt;电子邮箱&lt;/label&gt;&lt;input id="email" type="email"&gt;</code></div>
+            </div>
+        </div>
+
+        <div class="violation-list animate-fade-in-up delay-300">
+            <h2>🟡 中等违规 (Important)</h2>
+            <div class="violation-item">
+                <div class="violation-header">
+                    <span class="violation-title">文本与背景对比度不足</span>
+                    <span class="violation-tag important">Important</span>
+                </div>
+                <div class="violation-details">
+                    <div class="detail-item"><span class="label">WCAG 条款</span><span class="value">1.4.3 Contrast (Minimum)</span></div>
+                    <div class="detail-item"><span class="label">影响范围</span><span class="value">页脚文字</span></div>
+                    <div class="detail-item"><span class="label">检测类型</span><span class="value">静态扫描</span></div>
+                    <div class="detail-item"><span class="label">对比度</span><span class="value">3.2:1 (需 4.5:1)</span></div>
+                </div>
+                <div class="violation-code">.footer-text {
+  color: #888888;
+  background: #ffffff;
+}</div>
+                <div class="violation-suggestion"><strong>修复建议:</strong> 将文本颜色加深至至少 #4a4a4a，确保与白色背景的对比度达到 4.5:1。</div>
+            </div>
+            <div class="violation-item">
+                <div class="violation-header">
+                    <span class="violation-title">缺少 skip-to-content 链接</span>
+                    <span class="violation-tag important">Important</span>
+                </div>
+                <div class="violation-details">
+                    <div class="detail-item"><span class="label">WCAG 条款</span><span class="value">2.4.1 Bypass Blocks</span></div>
+                    <div class="detail-item"><span class="label">影响范围</span><span class="value">全站</span></div>
+                    <div class="detail-item"><span class="label">检测类型</span><span class="value">静态扫描</span></div>
+                    <div class="detail-item"><span class="label">页面 URL</span><span class="value">所有页面</span></div>
+                </div>
+                <div class="violation-code">&lt;header&gt;
+  &lt;nav&gt;...&lt;/nav&gt;
+&lt;/header&gt;
+&lt;main&gt;...&lt;/main&gt;</div>
+                <div class="violation-suggestion"><strong>修复建议:</strong> 在页面顶部添加一个隐藏的 skip link，使用 CSS 在聚焦时显示。示例: <code>&lt;a href="#main" class="skip-link"&gt;跳转到主内容&lt;/a&gt;</code></div>
+            </div>
+        </div>
+
+        <div class="checklist animate-fade-in-up delay-400">
+            <h2>✅ 审计检查清单</h2>
+            <div class="checklist-grid">
+                <div class="checklist-item"><div class="checkbox pass"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span class="text">所有图片有 alt 属性</span></div>
+                <div class="checklist-item"><div class="checkbox pass"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span class="text">所有表单有正确 label</span></div>
+                <div class="checklist-item"><div class="checkbox fail"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><span class="text">键盘可访问所有功能</span></div>
+                <div class="checklist-item"><div class="checkbox fail"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><span class="text">无键盘陷阱</span></div>
+                <div class="checklist-item"><div class="checkbox pass"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span class="text">焦点可见</span></div>
+                <div class="checklist-item"><div class="checkbox fail"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><span class="text">Modal 焦点管理正确</span></div>
+                <div class="checklist-item"><div class="checkbox fail"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><span class="text">提供 skip-to-content</span></div>
+                <div class="checklist-item"><div class="checkbox pass"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span class="text">颜色对比度达标</span></div>
+                <div class="checklist-item"><div class="checkbox pass"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span class="text">aria-live 区域存在</span></div>
+                <div class="checklist-item"><div class="checkbox fail"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><span class="text">错误消息可被屏幕阅读器读取</span></div>
+                <div class="checklist-item"><div class="checkbox pass"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span class="text">语义化 HTML 结构</span></div>
+                <div class="checklist-item"><div class="checkbox pass"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span class="text">ARIA 属性正确使用</span></div>
+            </div>
+        </div>
+
+        <div class="chart-container animate-fade-in-up delay-500">
+            <h2>📈 合规评分趋势</h2>
+            <div class="chart">
+                <div class="chart-y-axis">
+                    <span>100</span>
+                    <span>75</span>
+                    <span>50</span>
+                    <span>25</span>
+                    <span>0</span>
+                </div>
+                <div class="chart-bars">
+                    <div class="chart-bar-wrapper">
+                        <div class="chart-bar total" style="height: 55%;" data-value="55"></div>
+                    </div>
+                    <div class="chart-bar-wrapper">
+                        <div class="chart-bar total" style="height: 62%;" data-value="62"></div>
+                    </div>
+                    <div class="chart-bar-wrapper">
+                        <div class="chart-bar total" style="height: 68%;" data-value="68"></div>
+                    </div>
+                    <div class="chart-bar-wrapper">
+                        <div class="chart-bar total" style="height: 72%;" data-value="72"></div>
+                    </div>
+                    <div class="chart-bar-wrapper">
+                        <div class="chart-bar total" style="height: 75%;" data-value="75"></div>
+                    </div>
+                </div>
+                <div class="chart-labels">
+                    <span class="chart-label">第1周</span>
+                    <span class="chart-label">第2周</span>
+                    <span class="chart-label">第3周</span>
+                    <span class="chart-label">第4周</span>
+                    <span class="chart-label">本周</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer animate-fade-in-up delay-500">
+            <p>© 2026 AccessAudit - 无障碍合规审计平台</p>
+            <p class="disclaimer">本报告由自动化工具生成，仅供参考。最终合规判定应由专业无障碍顾问进行人工审查。本工具不构成合规保证。</p>
+        </div>
+    </div>
+</body>
+</html>

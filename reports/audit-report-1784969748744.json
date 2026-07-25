@@ -1,0 +1,511 @@
+{
+  "discoveredPaths": [
+    {
+      "id": "path-1",
+      "name": "账户设置",
+      "steps": [
+        {
+          "name": "账户设置",
+          "url": "https://www.barclays.co.uk/business-banking/accounts/"
+        }
+      ],
+      "priority": "medium",
+      "businessWeight": 50,
+      "urlPattern": "/business-banking/accounts/",
+      "tags": [
+        "medium"
+      ]
+    },
+    {
+      "id": "path-2",
+      "name": "账户设置",
+      "steps": [
+        {
+          "name": "账户设置",
+          "url": "https://www.barclays.co.uk/business-banking/accounts/business-current-account/"
+        }
+      ],
+      "priority": "medium",
+      "businessWeight": 50,
+      "urlPattern": "/business-banking/accounts/business-current-account/",
+      "tags": [
+        "medium"
+      ]
+    },
+    {
+      "id": "path-3",
+      "name": "账户设置",
+      "steps": [
+        {
+          "name": "账户设置",
+          "url": "https://www.barclays.co.uk/business-banking/accounts/charity-impact-account/"
+        }
+      ],
+      "priority": "medium",
+      "businessWeight": 50,
+      "urlPattern": "/business-banking/accounts/charity-impact-account/",
+      "tags": [
+        "medium"
+      ]
+    },
+    {
+      "id": "path-4",
+      "name": "账户设置",
+      "steps": [
+        {
+          "name": "账户设置",
+          "url": "https://www.barclays.co.uk/business-banking/accounts/business-savings-account/"
+        }
+      ],
+      "priority": "medium",
+      "businessWeight": 50,
+      "urlPattern": "/business-banking/accounts/business-savings-account/",
+      "tags": [
+        "medium"
+      ]
+    },
+    {
+      "id": "path-5",
+      "name": "账户设置",
+      "steps": [
+        {
+          "name": "账户设置",
+          "url": "https://www.barclays.co.uk/business-banking/accounts/treasury-deposit-account/"
+        }
+      ],
+      "priority": "medium",
+      "businessWeight": 50,
+      "urlPattern": "/business-banking/accounts/treasury-deposit-account/",
+      "tags": [
+        "medium"
+      ]
+    }
+  ],
+  "coverage": {
+    "keyboardReachRate": 100,
+    "focusVisibleRate": 100,
+    "nameComputationRate": 0,
+    "roleSemanticsRate": 0,
+    "modalFocusReturnRate": 50,
+    "goldenPathCoverage": 83,
+    "componentInteractionCoverage": 0
+  },
+  "results": [
+    {
+      "url": "https://www.barclays.co.uk/business-banking/accounts/",
+      "pathName": "账户设置",
+      "scanResult": {
+        "url": "https://www.barclays.co.uk/business-banking/accounts/",
+        "scanTime": 1,
+        "totalViolations": 3,
+        "critical": 1,
+        "serious": 1,
+        "moderate": 1,
+        "minor": 0,
+        "violations": [
+          {
+            "id": "color-contrast",
+            "wcagTag": "wcag2aa",
+            "severity": "critical",
+            "element": "<button class=\"btn\">Submit</button>",
+            "message": "Element has insufficient color contrast (2.1:1, requires 4.5:1)",
+            "fixSuggestion": "Increase text color contrast to at least 4.5:1"
+          },
+          {
+            "id": "image-alt",
+            "wcagTag": "wcag2aa",
+            "severity": "serious",
+            "element": "<img src=\"logo.png\">",
+            "message": "Image element does not have an alt attribute",
+            "fixSuggestion": "Add descriptive alt text to the image element"
+          },
+          {
+            "id": "label",
+            "wcagTag": "wcag2aa",
+            "severity": "moderate",
+            "element": "<input type=\"text\" id=\"username\">",
+            "message": "Form element does not have an associated label",
+            "fixSuggestion": "Add a label element associated with the input"
+          }
+        ]
+      },
+      "behaviorResults": [
+        {
+          "testType": "keyboard-reachability",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/",
+          "status": "pass",
+          "expectedBehavior": "All interactive elements should be reachable via keyboard",
+          "actualBehavior": "Found 0 unreachable elements",
+          "llmInsight": "Checking if all interactive elements are reachable via keyboard"
+        },
+        {
+          "testType": "keyboard-trap",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/",
+          "status": "pass",
+          "expectedBehavior": "Focus should not be trapped within a modal",
+          "actualBehavior": "Focus loop is working",
+          "llmInsight": "Checking for keyboard trap conditions in focusable elements"
+        },
+        {
+          "testType": "focus-visibility",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/",
+          "status": "pass",
+          "expectedBehavior": "Focus indicators should be visible",
+          "actualBehavior": "Focus indicator is visible",
+          "llmInsight": "Checking if focus indicators are visible"
+        },
+        {
+          "testType": "focus-order",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/",
+          "status": "fail",
+          "expectedBehavior": "Tab order should follow visual layout",
+          "actualBehavior": "Tab order does not follow visual layout",
+          "llmInsight": "Checking if tab order follows visual layout",
+          "fixSuggestion": "Adjust tabindex values or reorganize HTML to match visual layout"
+        },
+        {
+          "testType": "modal-focus-return",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/",
+          "status": "fail",
+          "expectedBehavior": "Focus should return to trigger element after modal close",
+          "actualBehavior": "Focus did not return to trigger",
+          "llmInsight": "Checking if focus returns to trigger after modal close",
+          "fixSuggestion": "Store trigger element reference and restore focus after modal closes"
+        }
+      ]
+    },
+    {
+      "url": "https://www.barclays.co.uk/business-banking/accounts/business-current-account/",
+      "pathName": "账户设置",
+      "scanResult": {
+        "url": "https://www.barclays.co.uk/business-banking/accounts/business-current-account/",
+        "scanTime": 0,
+        "totalViolations": 3,
+        "critical": 1,
+        "serious": 1,
+        "moderate": 1,
+        "minor": 0,
+        "violations": [
+          {
+            "id": "color-contrast",
+            "wcagTag": "wcag2aa",
+            "severity": "critical",
+            "element": "<button class=\"btn\">Submit</button>",
+            "message": "Element has insufficient color contrast (2.1:1, requires 4.5:1)",
+            "fixSuggestion": "Increase text color contrast to at least 4.5:1"
+          },
+          {
+            "id": "image-alt",
+            "wcagTag": "wcag2aa",
+            "severity": "serious",
+            "element": "<img src=\"logo.png\">",
+            "message": "Image element does not have an alt attribute",
+            "fixSuggestion": "Add descriptive alt text to the image element"
+          },
+          {
+            "id": "label",
+            "wcagTag": "wcag2aa",
+            "severity": "moderate",
+            "element": "<input type=\"text\" id=\"username\">",
+            "message": "Form element does not have an associated label",
+            "fixSuggestion": "Add a label element associated with the input"
+          }
+        ]
+      },
+      "behaviorResults": [
+        {
+          "testType": "keyboard-reachability",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-current-account/",
+          "status": "pass",
+          "expectedBehavior": "All interactive elements should be reachable via keyboard",
+          "actualBehavior": "Found 0 unreachable elements",
+          "llmInsight": "Checking if all interactive elements are reachable via keyboard"
+        },
+        {
+          "testType": "keyboard-trap",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-current-account/",
+          "status": "pass",
+          "expectedBehavior": "Focus should not be trapped within a modal",
+          "actualBehavior": "Focus loop is working",
+          "llmInsight": "Checking for keyboard trap conditions in focusable elements"
+        },
+        {
+          "testType": "focus-visibility",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-current-account/",
+          "status": "pass",
+          "expectedBehavior": "Focus indicators should be visible",
+          "actualBehavior": "Focus indicator is visible",
+          "llmInsight": "Checking if focus indicators are visible"
+        },
+        {
+          "testType": "focus-order",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-current-account/",
+          "status": "fail",
+          "expectedBehavior": "Tab order should follow visual layout",
+          "actualBehavior": "Tab order does not follow visual layout",
+          "llmInsight": "Checking if tab order follows visual layout",
+          "fixSuggestion": "Adjust tabindex values or reorganize HTML to match visual layout"
+        },
+        {
+          "testType": "modal-focus-return",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-current-account/",
+          "status": "fail",
+          "expectedBehavior": "Focus should return to trigger element after modal close",
+          "actualBehavior": "Focus did not return to trigger",
+          "llmInsight": "Checking if focus returns to trigger after modal close",
+          "fixSuggestion": "Store trigger element reference and restore focus after modal closes"
+        }
+      ]
+    },
+    {
+      "url": "https://www.barclays.co.uk/business-banking/accounts/charity-impact-account/",
+      "pathName": "账户设置",
+      "scanResult": {
+        "url": "https://www.barclays.co.uk/business-banking/accounts/charity-impact-account/",
+        "scanTime": 1,
+        "totalViolations": 3,
+        "critical": 1,
+        "serious": 1,
+        "moderate": 1,
+        "minor": 0,
+        "violations": [
+          {
+            "id": "color-contrast",
+            "wcagTag": "wcag2aa",
+            "severity": "critical",
+            "element": "<button class=\"btn\">Submit</button>",
+            "message": "Element has insufficient color contrast (2.1:1, requires 4.5:1)",
+            "fixSuggestion": "Increase text color contrast to at least 4.5:1"
+          },
+          {
+            "id": "image-alt",
+            "wcagTag": "wcag2aa",
+            "severity": "serious",
+            "element": "<img src=\"logo.png\">",
+            "message": "Image element does not have an alt attribute",
+            "fixSuggestion": "Add descriptive alt text to the image element"
+          },
+          {
+            "id": "label",
+            "wcagTag": "wcag2aa",
+            "severity": "moderate",
+            "element": "<input type=\"text\" id=\"username\">",
+            "message": "Form element does not have an associated label",
+            "fixSuggestion": "Add a label element associated with the input"
+          }
+        ]
+      },
+      "behaviorResults": [
+        {
+          "testType": "keyboard-reachability",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/charity-impact-account/",
+          "status": "pass",
+          "expectedBehavior": "All interactive elements should be reachable via keyboard",
+          "actualBehavior": "Found 0 unreachable elements",
+          "llmInsight": "Checking if all interactive elements are reachable via keyboard"
+        },
+        {
+          "testType": "keyboard-trap",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/charity-impact-account/",
+          "status": "pass",
+          "expectedBehavior": "Focus should not be trapped within a modal",
+          "actualBehavior": "Focus loop is working",
+          "llmInsight": "Checking for keyboard trap conditions in focusable elements"
+        },
+        {
+          "testType": "focus-visibility",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/charity-impact-account/",
+          "status": "pass",
+          "expectedBehavior": "Focus indicators should be visible",
+          "actualBehavior": "Focus indicator is visible",
+          "llmInsight": "Checking if focus indicators are visible"
+        },
+        {
+          "testType": "focus-order",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/charity-impact-account/",
+          "status": "fail",
+          "expectedBehavior": "Tab order should follow visual layout",
+          "actualBehavior": "Tab order does not follow visual layout",
+          "llmInsight": "Checking if tab order follows visual layout",
+          "fixSuggestion": "Adjust tabindex values or reorganize HTML to match visual layout"
+        },
+        {
+          "testType": "modal-focus-return",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/charity-impact-account/",
+          "status": "fail",
+          "expectedBehavior": "Focus should return to trigger element after modal close",
+          "actualBehavior": "Focus did not return to trigger",
+          "llmInsight": "Checking if focus returns to trigger after modal close",
+          "fixSuggestion": "Store trigger element reference and restore focus after modal closes"
+        }
+      ]
+    },
+    {
+      "url": "https://www.barclays.co.uk/business-banking/accounts/business-savings-account/",
+      "pathName": "账户设置",
+      "scanResult": {
+        "url": "https://www.barclays.co.uk/business-banking/accounts/business-savings-account/",
+        "scanTime": 1,
+        "totalViolations": 3,
+        "critical": 1,
+        "serious": 1,
+        "moderate": 1,
+        "minor": 0,
+        "violations": [
+          {
+            "id": "color-contrast",
+            "wcagTag": "wcag2aa",
+            "severity": "critical",
+            "element": "<button class=\"btn\">Submit</button>",
+            "message": "Element has insufficient color contrast (2.1:1, requires 4.5:1)",
+            "fixSuggestion": "Increase text color contrast to at least 4.5:1"
+          },
+          {
+            "id": "image-alt",
+            "wcagTag": "wcag2aa",
+            "severity": "serious",
+            "element": "<img src=\"logo.png\">",
+            "message": "Image element does not have an alt attribute",
+            "fixSuggestion": "Add descriptive alt text to the image element"
+          },
+          {
+            "id": "label",
+            "wcagTag": "wcag2aa",
+            "severity": "moderate",
+            "element": "<input type=\"text\" id=\"username\">",
+            "message": "Form element does not have an associated label",
+            "fixSuggestion": "Add a label element associated with the input"
+          }
+        ]
+      },
+      "behaviorResults": [
+        {
+          "testType": "keyboard-reachability",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-savings-account/",
+          "status": "fail",
+          "expectedBehavior": "All interactive elements should be reachable via keyboard",
+          "actualBehavior": "Found 1 unreachable elements",
+          "llmInsight": "Checking if all interactive elements are reachable via keyboard",
+          "fixSuggestion": "Add tabindex=\"0\" to all interactive elements and ensure proper focus management"
+        },
+        {
+          "testType": "keyboard-trap",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-savings-account/",
+          "status": "pass",
+          "expectedBehavior": "Focus should not be trapped within a modal",
+          "actualBehavior": "Focus loop is working",
+          "llmInsight": "Checking for keyboard trap conditions in focusable elements"
+        },
+        {
+          "testType": "focus-visibility",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-savings-account/",
+          "status": "pass",
+          "expectedBehavior": "Focus indicators should be visible",
+          "actualBehavior": "Focus indicator is visible",
+          "llmInsight": "Checking if focus indicators are visible"
+        },
+        {
+          "testType": "focus-order",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-savings-account/",
+          "status": "fail",
+          "expectedBehavior": "Tab order should follow visual layout",
+          "actualBehavior": "Tab order does not follow visual layout",
+          "llmInsight": "Checking if tab order follows visual layout",
+          "fixSuggestion": "Adjust tabindex values or reorganize HTML to match visual layout"
+        },
+        {
+          "testType": "modal-focus-return",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/business-savings-account/",
+          "status": "fail",
+          "expectedBehavior": "Focus should return to trigger element after modal close",
+          "actualBehavior": "Focus did not return to trigger",
+          "llmInsight": "Checking if focus returns to trigger after modal close",
+          "fixSuggestion": "Store trigger element reference and restore focus after modal closes"
+        }
+      ]
+    },
+    {
+      "url": "https://www.barclays.co.uk/business-banking/accounts/treasury-deposit-account/",
+      "pathName": "账户设置",
+      "scanResult": {
+        "url": "https://www.barclays.co.uk/business-banking/accounts/treasury-deposit-account/",
+        "scanTime": 0,
+        "totalViolations": 3,
+        "critical": 1,
+        "serious": 1,
+        "moderate": 1,
+        "minor": 0,
+        "violations": [
+          {
+            "id": "color-contrast",
+            "wcagTag": "wcag2aa",
+            "severity": "critical",
+            "element": "<button class=\"btn\">Submit</button>",
+            "message": "Element has insufficient color contrast (2.1:1, requires 4.5:1)",
+            "fixSuggestion": "Increase text color contrast to at least 4.5:1"
+          },
+          {
+            "id": "image-alt",
+            "wcagTag": "wcag2aa",
+            "severity": "serious",
+            "element": "<img src=\"logo.png\">",
+            "message": "Image element does not have an alt attribute",
+            "fixSuggestion": "Add descriptive alt text to the image element"
+          },
+          {
+            "id": "label",
+            "wcagTag": "wcag2aa",
+            "severity": "moderate",
+            "element": "<input type=\"text\" id=\"username\">",
+            "message": "Form element does not have an associated label",
+            "fixSuggestion": "Add a label element associated with the input"
+          }
+        ]
+      },
+      "behaviorResults": [
+        {
+          "testType": "keyboard-reachability",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/treasury-deposit-account/",
+          "status": "pass",
+          "expectedBehavior": "All interactive elements should be reachable via keyboard",
+          "actualBehavior": "Found 0 unreachable elements",
+          "llmInsight": "Checking if all interactive elements are reachable via keyboard"
+        },
+        {
+          "testType": "keyboard-trap",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/treasury-deposit-account/",
+          "status": "pass",
+          "expectedBehavior": "Focus should not be trapped within a modal",
+          "actualBehavior": "Focus loop is working",
+          "llmInsight": "Checking for keyboard trap conditions in focusable elements"
+        },
+        {
+          "testType": "focus-visibility",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/treasury-deposit-account/",
+          "status": "pass",
+          "expectedBehavior": "Focus indicators should be visible",
+          "actualBehavior": "Focus indicator is visible",
+          "llmInsight": "Checking if focus indicators are visible"
+        },
+        {
+          "testType": "focus-order",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/treasury-deposit-account/",
+          "status": "fail",
+          "expectedBehavior": "Tab order should follow visual layout",
+          "actualBehavior": "Tab order does not follow visual layout",
+          "llmInsight": "Checking if tab order follows visual layout",
+          "fixSuggestion": "Adjust tabindex values or reorganize HTML to match visual layout"
+        },
+        {
+          "testType": "modal-focus-return",
+          "targetElement": "https://www.barclays.co.uk/business-banking/accounts/treasury-deposit-account/",
+          "status": "fail",
+          "expectedBehavior": "Focus should return to trigger element after modal close",
+          "actualBehavior": "Focus did not return to trigger",
+          "llmInsight": "Checking if focus returns to trigger after modal close",
+          "fixSuggestion": "Store trigger element reference and restore focus after modal closes"
+        }
+      ]
+    }
+  ]
+}
