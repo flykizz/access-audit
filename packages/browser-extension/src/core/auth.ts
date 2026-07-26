@@ -17,7 +17,16 @@ import { generateId } from './utils';
 /** 后端 API 基础地址（开发环境） */
 export const API_BASE_URL = 'http://localhost:3000';
 
-/** 登录接口响应体 */
+/** 后端 AuthResponse 格式 */
+interface AuthResponseDto {
+  id: string;
+  name: string;
+  email: string;
+  credits: number;
+  accessToken: string;
+}
+
+/** 登录接口响应体（前端内部格式） */
 interface LoginResponse {
   token: string;
   user: UserInfo;
@@ -52,17 +61,24 @@ export class AuthManager {
    * 成功后将 token 与 user 写入 storage，并清除 lock 状态。
    */
   async login(email: string, password: string): Promise<UserInfo> {
-    const res = await this.request<LoginResponse>('/auth/login', {
+    const res = await this.request<AuthResponseDto>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
 
-    await storageService.set(StorageKeys.AUTH_TOKEN, res.token);
-    await storageService.set(StorageKeys.USER_INFO, res.user);
+    const user: UserInfo = {
+      id: res.id,
+      name: res.name,
+      email: res.email,
+      role: 'user',
+    };
+
+    await storageService.set(StorageKeys.AUTH_TOKEN, res.accessToken);
+    await storageService.set(StorageKeys.USER_INFO, user);
     await storageService.set(StorageKeys.AUTH_LOCK, false);
     await storageService.remove(StorageKeys.AUTH_REASON);
 
-    return res.user;
+    return user;
   }
 
   /**
@@ -70,11 +86,16 @@ export class AuthManager {
    * 注册成功后不自动登录，由调用方决定下一步（通常跳转到登录页）。
    */
   async signup(name: string, email: string, password: string): Promise<UserInfo> {
-    const res = await this.request<{ user: UserInfo }>('/auth/signup', {
+    const res = await this.request<AuthResponseDto>('/auth/signup', {
       method: 'POST',
       body: JSON.stringify({ name, email, password }),
     });
-    return res.user;
+    return {
+      id: res.id,
+      name: res.name,
+      email: res.email,
+      role: 'user',
+    };
   }
 
   /**

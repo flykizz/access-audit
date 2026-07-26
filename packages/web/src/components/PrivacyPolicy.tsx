@@ -21,35 +21,35 @@ function PrivacyPolicy() {
         </Link>
 
         <Typography variant="h1" sx={{ fontSize: '2.5rem', fontWeight: 700, mb: 6, color: theme.palette.text.primary }}>
-          隐私政策
+          Privacy Policy
         </Typography>
 
         <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 8, fontSize: '1.125rem' }}>
-          最后更新: 2026年7月25日
+          Last updated: July 25, 2026
         </Typography>
 
         <Box sx={{ mb: 8 }}>
           <Typography variant="h2" sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 4, color: theme.palette.text.primary }}>
-            1. 引言
+            1. Introduction
           </Typography>
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 4, lineHeight: 1.8 }}>
-            本隐私政策解释了 AccessAudit（"我们"、"我们的"）在您使用我们的网站、Web 应用、API 及相关服务（"服务"）时如何收集、使用和分享您的个人信息。
+            This Privacy Policy explains how AccessAudit ("we," "us") collects, uses, and shares your personal information when you use our website, web application, API, and related services ("Services").
           </Typography>
         </Box>
 
         <Box sx={{ mb: 8 }}>
           <Typography variant="h2" sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 4, color: theme.palette.text.primary }}>
-            2. 我们收集的信息
+            2. Information We Collect
           </Typography>
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 4, lineHeight: 1.8 }}>
-            我们可能收集以下类型的信息：
+            We may collect the following types of information:
           </Typography>
           <ul>
             {[
-              '账户信息：创建账户时，我们收集您的姓名、电子邮件地址和密码（已哈希处理）。',
-              '使用信息：我们收集关于您如何使用我们服务的信息，包括扫描历史、API 使用和功能使用情况。',
-              '设备信息：我们收集关于您用于访问我们服务的设备的信息，包括 IP 地址、浏览器类型和操作系统。',
-              '扫描数据：当您运行无障碍扫描时，我们可能收集 URL、页面内容和扫描结果，以提供服务。',
+              'Account Information: When creating an account, we collect your name, email address, and password (hashed).',
+              'Usage Information: We collect information about how you use our Services, including scan history, API usage, and feature usage.',
+              'Device Information: We collect information about the devices you use to access our Services, including IP address, browser type, and operating system.',
+              'Scan Data: When you run accessibility scans, we may collect URLs, page content, and scan results to provide the Service.',
             ].map((item, index) => (
               <li key={index}>
                 <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2, lineHeight: 1.8, pl: 2 }}>
@@ -62,18 +62,18 @@ function PrivacyPolicy() {
 
         <Box sx={{ mb: 8 }}>
           <Typography variant="h2" sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 4, color: theme.palette.text.primary }}>
-            3. 我们如何使用您的信息
+            3. How We Use Your Information
           </Typography>
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 4, lineHeight: 1.8 }}>
-            我们使用您的信息来：
+            We use your information to:
           </Typography>
           <ul>
             {[
-              '提供和维护我们的服务。',
-              '处理您的请求并提供客户支持。',
-              '通过分析和测试改进我们的服务。',
-              '向您发送重要更新和通知。',
-              '遵守法律义务。',
+              'Provide and maintain our Services.',
+              'Process your requests and provide customer support.',
+              'Improve our Services through analysis and testing.',
+              'Send you important updates and notifications.',
+              'Comply with legal obligations.',
             ].map((item, index) => (
               <li key={index}>
                 <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2, lineHeight: 1.8, pl: 2 }}>
@@ -86,36 +86,36 @@ function PrivacyPolicy() {
 
         <Box sx={{ mb: 8 }}>
           <Typography variant="h2" sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 4, color: theme.palette.text.primary }}>
-            4. 数据安全
+            4. Data Security
           </Typography>
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 4, lineHeight: 1.8 }}>
-            我们采取合理措施保护您的信息免受未经授权的访问、使用或披露。但是，没有任何互联网传输方法或电子存储方法是 100% 安全的。
+            We take reasonable measures to protect your information from unauthorized access, use, or disclosure. However, no method of internet transmission or electronic storage is 100% secure.
           </Typography>
         </Box>
 
         <Box sx={{ mb: 8 }}>
           <Typography variant="h2" sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 4, color: theme.palette.text.primary }}>
-            5. 第三方服务
+            5. Third-Party Services
           </Typography>
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 4, lineHeight: 1.8 }}>
-            我们可能使用第三方服务来帮助运营我们的服务。这些服务可能有自己的隐私政策，规定他们如何处理您的信息。
+            We may use third-party services to help operate our Services. These services may have their own privacy policies governing how they handle your information.
           </Typography>
         </Box>
 
         <Box sx={{ mb: 8 }}>
           <Typography variant="h2" sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 4, color: theme.palette.text.primary }}>
-            6. 您的权利
+            6. Your Rights
           </Typography>
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 4, lineHeight: 1.8 }}>
-            根据您的位置，您可能有权：
+            Depending on your location, you may have the right to:
           </Typography>
           <ul>
             {[
-              '访问您的个人信息。',
-              '更正不准确的个人信息。',
-              '删除您的个人信息。',
-              '限制或反对处理您的个人信息。',
-              '撤回您的同意。',
+              'Access your personal information.',
+              'Correct inaccurate personal information.',
+              'Delete your personal information.',
+              'Restrict or object to the processing of your personal information.',
+              'Withdraw your consent.',
             ].map((item, index) => (
               <li key={index}>
                 <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 2, lineHeight: 1.8, pl: 2 }}>
@@ -128,28 +128,28 @@ function PrivacyPolicy() {
 
         <Box sx={{ mb: 8 }}>
           <Typography variant="h2" sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 4, color: theme.palette.text.primary }}>
-            7. 儿童隐私
+            7. Children's Privacy
           </Typography>
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 4, lineHeight: 1.8 }}>
-            我们的服务不面向 13 岁以下的儿童。我们不会故意收集 13 岁以下儿童的个人信息。如果您是家长或监护人，并且认为您的孩子向我们提供了个人信息，请联系我们。
+            Our Services are not directed to children under 13. We do not knowingly collect personal information from children under 13. If you are a parent or guardian and believe your child has provided us with personal information, please contact us.
           </Typography>
         </Box>
 
         <Box sx={{ mb: 8 }}>
           <Typography variant="h2" sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 4, color: theme.palette.text.primary }}>
-            8. 隐私政策变更
+            8. Changes to Privacy Policy
           </Typography>
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 4, lineHeight: 1.8 }}>
-            我们可能不时更新本隐私政策。我们将通过在我们的网站上发布新的隐私政策来通知您任何变更。在新隐私政策生效日期后，您继续使用服务即表示您接受变更。
+            We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on our website. Your continued use of the Services after the effective date of the new Privacy Policy constitutes your acceptance of the changes.
           </Typography>
         </Box>
 
         <Box sx={{ mb: 8 }}>
           <Typography variant="h2" sx={{ fontSize: '1.5rem', fontWeight: 600, mb: 4, color: theme.palette.text.primary }}>
-            9. 联系我们
+            9. Contact Us
           </Typography>
           <Typography variant="body1" sx={{ color: theme.palette.text.secondary, mb: 4, lineHeight: 1.8 }}>
-            如果您对本隐私政策有任何疑问，请通过 privacy@accessaudit.com 联系我们。
+            If you have any questions about this Privacy Policy, please contact us at privacy@accessaudit.com.
           </Typography>
         </Box>
       </Container>

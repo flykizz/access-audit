@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -72,6 +72,7 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
   const [expandedViolations, setExpandedViolations] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedPageIndex, setSelectedPageIndex] = useState(0);
+  const clipboardTimeoutRef = useRef<number | null>(null);
 
   const toggleViolation = (id: string) => {
     setExpandedViolations((prev) =>
@@ -80,10 +81,21 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
   };
 
   const copyToClipboard = async (text: string, id: string) => {
+    if (clipboardTimeoutRef.current) {
+      clearTimeout(clipboardTimeoutRef.current);
+    }
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+    clipboardTimeoutRef.current = window.setTimeout(() => setCopiedId(null), 2000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (clipboardTimeoutRef.current) {
+        clearTimeout(clipboardTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const getSeverityColor = (severity: string) => {
     switch (severity.toLowerCase()) {

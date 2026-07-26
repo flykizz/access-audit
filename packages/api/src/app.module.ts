@@ -6,13 +6,14 @@ import { EngineModule } from './engine/engine.module';
 import { ReportModule } from './report/report.module';
 import { AuthModule } from './auth/auth.module';
 import { User } from './auth/user.entity';
+import { ScanTask } from './scanner/scan-task.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'accessaudit.db',
-      entities: [User],
+      entities: [User, ScanTask],
       synchronize: true,
     }),
     ScannerModule,

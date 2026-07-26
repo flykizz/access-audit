@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
@@ -27,7 +27,9 @@ import InteractionTestPage from './components/test/InteractionTestPage';
 import TermsOfService from './components/TermsOfService';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import OAuthCallback from './components/OAuthCallback';
+import Profile from './components/Profile';
 import { theme, darkTheme } from './theme';
+import { useAppStore } from './store/appStore';
 
 function Home() {
   return (
@@ -39,7 +41,6 @@ function Home() {
       <ComparisonSection />
       <ShipFaster />
       <HandleTheHardStuff />
-      <Pricing />
       <FAQSection />
     </>
   );
@@ -47,6 +48,28 @@ function Home() {
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const login = useAppStore((state) => state.login);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('accessToken');
+    const savedUser = localStorage.getItem('user');
+    
+    if (savedToken && savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        login({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          credits: userData.credits,
+          role: userData.role,
+        }, savedToken);
+      } catch {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
+      }
+    }
+  }, [login]);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -111,6 +134,30 @@ function App() {
         <Route
           path="/auth/callback"
           element={<OAuthCallback />}
+        />
+        <Route
+          path="/profile"
+          element={
+            <>
+              <Header onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />
+              <main>
+                <Profile />
+              </main>
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/pricing"
+          element={
+            <>
+              <Header onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />
+              <main>
+                <Pricing />
+              </main>
+              <Footer />
+            </>
+          }
         />
         <Route
           path="/"

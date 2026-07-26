@@ -2,11 +2,10 @@
   "name": "@accessaudit/api",
   "version": "0.1.0",
   "main": "dist/main.js",
-  "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/main.js",
-    "dev": "tsc -p tsconfig.json --watch && nodemon dist/main.js",
+    "start": "tsx src/main.ts",
+    "dev": "tsx watch src/main.ts",
     "test": "vitest"
   },
   "dependencies": {

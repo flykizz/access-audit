@@ -2,8 +2,7 @@ import { z } from 'zod';
 import type { LLMConfig, ProviderType } from './types.js';
 
 try {
-  const result = await import('dotenv');
-  result.config();
+  require('dotenv').config();
 } catch {
 }
 

@@ -13,8 +13,10 @@ import {
 } from '@mui/material';
 import { ArrowRight } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
+import { useAppStore } from '../store/appStore';
 
 function Login() {
+  const login = useAppStore((state) => state.login);
   const theme = useTheme();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -50,6 +52,13 @@ function Login() {
 
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('user', JSON.stringify(data));
+      login({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        credits: data.credits,
+        role: data.role,
+      }, data.accessToken);
       navigate('/');
     } catch (err) {
       setError('Failed to connect to server');

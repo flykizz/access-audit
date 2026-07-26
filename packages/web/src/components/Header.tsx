@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -11,8 +11,13 @@ import {
   Typography,
   useMediaQuery,
   useTheme,
+  Avatar,
+  Popper,
+  Paper,
+  ClickAwayListener,
 } from '@mui/material';
-import { Menu as MenuIcon, Brightness4, Brightness7 } from '@mui/icons-material';
+import { Menu as MenuIcon, Brightness4, Brightness7, Logout, AccountCircle, ArrowRight } from '@mui/icons-material';
+import { useAppStore } from '../store/appStore';
 
 interface HeaderProps {
   onThemeToggle: () => void;
@@ -20,14 +25,24 @@ interface HeaderProps {
 }
 
 function Header({ onThemeToggle, isDarkMode }: HeaderProps) {
+  const navigate = useNavigate();
+  const user = useAppStore((state) => state.user);
+  const logout = useAppStore((state) => state.logout);
+
+  const handleLogout = () => {
+    logout();
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+    navigate('/');
+  };
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
-    { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#pricing' },
+    { label: 'Features', href: '/#features' },
+    { label: 'Pricing', href: '/pricing' },
     { label: 'Docs', href: '/docs' },
     { label: 'Test Pages', href: '/test-pages' },
   ];
@@ -46,6 +61,18 @@ function Header({ onThemeToggle, isDarkMode }: HeaderProps) {
 
   const handleMobileMenuClose = () => {
     setMobileMenuOpen(false);
+  };
+
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
+
+  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setUserMenuAnchor(event.currentTarget);
+    setUserMenuOpen(true);
+  };
+
+  const handleUserMenuClose = () => {
+    setUserMenuOpen(false);
   };
 
   return (
@@ -109,7 +136,8 @@ function Header({ onThemeToggle, isDarkMode }: HeaderProps) {
           {navItems.map((item) => (
             <Button
               key={item.label}
-              href={item.href}
+              component={Link}
+              to={item.href}
               sx={{
                 color: theme.palette.text.secondary,
                 '&:hover': {
@@ -136,6 +164,41 @@ function Header({ onThemeToggle, isDarkMode }: HeaderProps) {
 
           {!isMobile && (
             <>
+              {user ? (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Button
+                    component={Link}
+                    to="/scan"
+                    variant="contained"
+                    sx={{
+                      backgroundColor: theme.palette.primary.main,
+                      '&:hover': {
+                        backgroundColor: theme.palette.primary.dark,
+                      },
+                    }}
+                  >
+                    Start Scan
+                  </Button>
+                  <Box
+                    sx={{ position: 'relative' }}
+                    onMouseEnter={handleUserMenuOpen}
+                  >
+                    <Avatar
+                      sx={{
+                        bgcolor: theme.palette.primary.main,
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        '&:hover': {
+                          transform: 'scale(1.05)',
+                          boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+                        },
+                      }}
+                    >
+                      {user.name.charAt(0).toUpperCase()}
+                    </Avatar>
+                  </Box>
+                </Box>
+              ) : (
                 <Button
                   component={Link}
                   to="/login"
@@ -149,6 +212,7 @@ function Header({ onThemeToggle, isDarkMode }: HeaderProps) {
                 >
                   Sign In
                 </Button>
+              )}
             </>
           )}
 
@@ -169,23 +233,115 @@ function Header({ onThemeToggle, isDarkMode }: HeaderProps) {
         >
           {navItems.map((item) => (
             <MenuItem key={item.label} onClick={handleMenuClose}>
-              <Button href={item.href} sx={{ textAlign: 'left', width: '100%' }}>
+              <Button component={Link} to={item.href} sx={{ textAlign: 'left', width: '100%' }}>
                 {item.label}
               </Button>
             </MenuItem>
           ))}
-          <MenuItem onClick={handleMenuClose}>
-            <Button component={Link} to="/login" sx={{ textAlign: 'left', width: '100%' }}>
-              Sign In
-            </Button>
-          </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
-            <Button component={Link} to="/signup" variant="contained" sx={{ width: '100%' }}>
-              Sign Up
-            </Button>
-          </MenuItem>
+          {user ? (
+            <>
+              <MenuItem onClick={handleMenuClose}>
+                <Button component={Link} to="/scan" sx={{ textAlign: 'left', width: '100%' }}>
+                  Start Scan
+                </Button>
+              </MenuItem>
+              <MenuItem onClick={() => { handleMenuClose(); handleLogout(); }}>
+                <Button sx={{ textAlign: 'left', width: '100%', color: theme.palette.error.main }}>
+                  <Logout sx={{ fontSize: 16, mr: 1 }} />
+                  Logout
+                </Button>
+              </MenuItem>
+            </>
+          ) : (
+            <>
+              <MenuItem onClick={handleMenuClose}>
+                <Button component={Link} to="/login" sx={{ textAlign: 'left', width: '100%' }}>
+                  Sign In
+                </Button>
+              </MenuItem>
+              <MenuItem onClick={handleMenuClose}>
+                <Button component={Link} to="/signup" variant="contained" sx={{ width: '100%' }}>
+                  Sign Up
+                </Button>
+              </MenuItem>
+            </>
+          )}
         </Menu>
+
       </Toolbar>
+      <ClickAwayListener onClickAway={() => setUserMenuOpen(false)}>
+        <Popper
+          open={userMenuOpen}
+          anchorEl={userMenuAnchor}
+          placement="bottom-end"
+          sx={{ zIndex: 1300 }}
+        >
+          <Paper
+            sx={{
+              width: '240px',
+              borderRadius: '12px',
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12)',
+              border: `1px solid ${theme.palette.divider}`,
+              overflow: 'hidden',
+              mt: 1,
+              transition: 'opacity 0.15s ease, transform 0.15s ease',
+            }}
+          >
+            <Box sx={{ p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, pb: 3, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
+                  {user?.name.charAt(0).toUpperCase()}
+                </Avatar>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
+                    {user?.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+                    {user?.email}
+                  </Typography>
+                </Box>
+              </Box>
+              <Button
+                component={Link}
+                to="/profile"
+                onClick={() => setUserMenuOpen(false)}
+                sx={{
+                  width: '100%',
+                  justifyContent: 'flex-start',
+                  py: 2,
+                  gap: 2,
+                  color: theme.palette.text.primary,
+                  '&:hover': {
+                    backgroundColor: theme.palette.action.hover,
+                    borderRadius: '8px',
+                  },
+                }}
+              >
+                <AccountCircle sx={{ fontSize: 20, color: theme.palette.primary.main }} />
+                <Typography variant="body1">Profile</Typography>
+                <ArrowRight sx={{ fontSize: 16, color: theme.palette.text.secondary, ml: 'auto' }} />
+              </Button>
+              <Button
+                onClick={() => { setUserMenuOpen(false); handleLogout(); }}
+                sx={{
+                  width: '100%',
+                  justifyContent: 'flex-start',
+                  py: 2,
+                  gap: 2,
+                  color: theme.palette.error.main,
+                  '&:hover': {
+                    backgroundColor: theme.palette.error.light,
+                    borderRadius: '8px',
+                  },
+                }}
+              >
+                <Logout sx={{ fontSize: 20 }} />
+                <Typography variant="body1">Logout</Typography>
+              </Button>
+            </Box>
+          </Paper>
+        </Popper>
+      </ClickAwayListener>
     </AppBar>
   );
 }

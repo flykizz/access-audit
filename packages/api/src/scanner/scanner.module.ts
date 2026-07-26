@@ -1,11 +1,14 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScannerController } from './scanner.controller';
-import { ScannerService } from './scanner.service';
+import { TaskController } from './task.controller';
+import { TaskService } from './task.service';
+import { ScanTask } from './scan-task.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [AuthModule],
-  controllers: [ScannerController],
-  providers: [ScannerService],
+  imports: [AuthModule, TypeOrmModule.forFeature([ScanTask])],
+  controllers: [ScannerController, TaskController],
+  providers: [TaskService],
 })
 export class ScannerModule {}

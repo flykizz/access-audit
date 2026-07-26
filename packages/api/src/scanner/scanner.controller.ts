@@ -1,5 +1,5 @@
-import { Controller, Post, Get, Body, Query, UseGuards, Req, InternalServerErrorException } from '@nestjs/common';
-import { ScannerService } from './scanner.service';
+import { Controller, Post, Get, Body, Query, UseGuards, Req } from '@nestjs/common';
+import { TaskService } from './task.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthService } from '../auth/auth.service';
 import type { UserRole } from '../auth/user.entity';
@@ -10,6 +10,7 @@ interface StaticScanBody {
   includeHidden?: boolean;
   timeout?: number;
   maxPages?: number;
+  webhookUrl?: string;
 }
 
 interface ScanApiResponse<T> {
@@ -27,9 +28,36 @@ interface CustomRequest {
 @UseGuards(JwtAuthGuard)
 export class ScannerController {
   constructor(
-    private readonly scannerService: ScannerService,
+    private readonly taskService: TaskService,
     private readonly authService: AuthService,
   ) {}
+
+  private getMaxPagesByRole(role: UserRole | null): number {
+    if (!role || role === 'guest') return 1;
+    if (role === 'user') return 3;
+    if (role === 'vip') return 50;
+    return 1;
+  }
+
+  private getRules(category?: string) {
+    const allRules = [
+      { id: 'color-contrast', name: 'Color Contrast', category: 'perceivable', severity: 'critical', description: 'Checks for sufficient color contrast', wcagTag: 'wcag2aa' },
+      { id: 'image-alt', name: 'Image Alt', category: 'perceivable', severity: 'serious', description: 'Checks for image alt attributes', wcagTag: 'wcag2aa' },
+      { id: 'label', name: 'Form Label', category: 'operable', severity: 'moderate', description: 'Checks for form label associations', wcagTag: 'wcag2aa' },
+      { id: 'button-name', name: 'Button Name', category: 'operable', severity: 'serious', description: 'Checks for accessible button names', wcagTag: 'wcag2aa' },
+      { id: 'link-name', name: 'Link Name', category: 'operable', severity: 'serious', description: 'Checks for accessible link names', wcagTag: 'wcag2aa' },
+      { id: 'aria-valid-attr', name: 'ARIA Valid Attributes', category: 'robust', severity: 'moderate', description: 'Checks for valid ARIA attributes', wcagTag: 'wcag2aa' },
+    ];
+
+    const filteredRules = category
+      ? allRules.filter(r => r.category === category)
+      : allRules;
+
+    return {
+      rules: filteredRules,
+      total: filteredRules.length,
+    };
+  }
 
   @Post('static')
   async staticScan(
@@ -45,7 +73,7 @@ export class ScannerController {
       const userRole = req.user ? await this.getUserRole(req.user.userId) : null;
       console.log(`[${requestId}] User role determined:`, userRole);
       
-      const maxPagesAllowed = this.scannerService.getMaxPagesByRole(userRole as UserRole | null);
+      const maxPagesAllowed = this.getMaxPagesByRole(userRole as UserRole | null);
       console.log(`[${requestId}] Max pages allowed:`, maxPagesAllowed);
       
       let requestedPages = body.maxPages || maxPagesAllowed;
@@ -54,32 +82,63 @@ export class ScannerController {
       }
       console.log(`[${requestId}] Requested pages:`, requestedPages);
 
-      const result = await this.scannerService.multiPageScan(body, requestedPages);
-      console.log(`[${requestId}] Scan completed successfully`, { totalPages: result.totalPages });
+      const userId = req.user?.userId || null;
+      const priority = userRole === 'vip' ? 10 : (userRole === 'user' ? 5 : 0);
+
+      const task = await this.taskService.createTask({
+        userId,
+        url: body.url,
+        options: {
+          rules: body.rules,
+          includeHidden: body.includeHidden,
+          timeout: body.timeout,
+          maxPages: requestedPages,
+        },
+        priority,
+        webhookUrl: body.webhookUrl,
+      });
+
+      const queueStatus = await this.taskService.getQueueStatus();
+
+      console.log(`[${requestId}] Task created: ${task.id}, status: ${task.status}`);
       
       return {
         success: true,
-        data: result,
-        message: `Scanned ${result.totalPages} page(s) (${userRole || 'guest'} tier, max ${maxPagesAllowed} pages)`,
+        data: {
+          taskId: task.id,
+          status: task.status,
+          url: body.url,
+          totalPages: requestedPages,
+          priority,
+          queueStatus: {
+            pendingCount: queueStatus.pendingCount,
+            processingCount: queueStatus.processingCount,
+            maxConcurrent: queueStatus.maxConcurrent,
+          },
+        },
+        message: `Scan task created successfully. Check status at /api/v1/tasks/${task.id}`,
         meta: {
           timestamp: new Date().toISOString(),
           requestId,
         },
       };
     } catch (error) {
-      console.error(`[${requestId}] Scan failed with error:`, error);
-      throw new InternalServerErrorException({
-        message: 'Scan failed',
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        requestId,
-      });
+      console.error(`[${requestId}] Failed to create scan task:`, error);
+      return {
+        success: false,
+        data: null,
+        message: 'Failed to create scan task',
+        meta: {
+          timestamp: new Date().toISOString(),
+          requestId,
+        },
+      };
     }
   }
 
   @Get('rules')
-  getRules(@Query('category') category?: string): ScanApiResponse<unknown> {
-    const result = this.scannerService.getRules(category);
+  getRulesEndpoint(@Query('category') category?: string): ScanApiResponse<unknown> {
+    const result = this.getRules(category);
     return {
       success: true,
       data: result,

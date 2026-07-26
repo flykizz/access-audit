@@ -15,6 +15,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "baseUrl": ".",
     "paths": {
       "@accessaudit/core": ["packages/core/src"],
       "@accessaudit/cli": ["packages/cli/src"],

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -11,6 +11,7 @@ import {
   Chip,
   useTheme,
   Alert,
+  LinearProgress,
 } from '@mui/material';
 import {
   Public,
@@ -20,6 +21,7 @@ import {
   Smartphone,
   CheckCircle,
   ArrowRight,
+  Cancel,
 } from '@mui/icons-material';
 import Header from './Header';
 import Footer from './Footer';
@@ -43,17 +45,37 @@ interface MultiPageScanResult {
   minor: number;
 }
 
+interface TaskStatus {
+  id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  url: string;
+  currentPage: number;
+  totalPages: number;
+  progress: number;
+  result: MultiPageScanResult | null;
+  errorMessage: string | null;
+  queueStatus?: {
+    pendingCount: number;
+    processingCount: number;
+    maxConcurrent: number;
+  };
+}
+
 function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
   const [error, setError] = useState('');
-  const [currentStep, setCurrentStep] = useState('');
-  const [scanResult, setScanResult] = useState<MultiPageScanResult | null>(null);
-  const [scanId, setScanId] = useState('');
+  const [queueStatus, setQueueStatus] = useState<{
+    pendingCount: number;
+    processingCount: number;
+    maxConcurrent: number;
+  } | null>(null);
   const addScanResults = useAppStore((state) => state.addScanResults);
+  const pollingIntervalRef = useRef<number | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scanSteps = [
     'Initializing AI agent...',
@@ -66,57 +88,183 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
     'Scan complete!',
   ];
 
+  const clearPolling = useCallback(() => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
-    if (isScanning) {
-      const stepIndex = Math.floor(progress / 14);
-      if (stepIndex < scanSteps.length) {
-        setCurrentStep(scanSteps[stepIndex]);
+    return () => {
+      clearPolling();
+    };
+  }, [clearPolling]);
+
+  useEffect(() => {
+    if (!isScanning || !taskStatus) {
+      return;
+    }
+
+    const shouldPoll = ['pending', 'processing'].includes(taskStatus.status);
+    
+    if (!shouldPoll) {
+      return;
+    }
+
+    const pollTask = async () => {
+      if (!taskStatus.id) return;
+
+      abortControllerRef.current = new AbortController();
+
+      try {
+        const response = await api.get(`/v1/tasks/${taskStatus.id}`, {
+          signal: abortControllerRef.current.signal,
+        });
+        const updatedTask = response.data.data;
+        setTaskStatus(updatedTask);
+
+        if (updatedTask.status === 'completed') {
+          handleTaskComplete(updatedTask);
+        } else if (updatedTask.status === 'failed') {
+          handleTaskFailed(updatedTask);
+        } else if (updatedTask.status === 'cancelled') {
+          handleTaskCancelled();
+        }
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') {
+          console.error('Error polling task status:', err);
+        }
+      }
+    };
+
+    pollTask();
+
+    pollingIntervalRef.current = window.setInterval(pollTask, 2000);
+
+    return () => {
+      clearPolling();
+    };
+  }, [isScanning, taskStatus?.id, taskStatus?.status, clearPolling]);
+
+  const handleTaskComplete = useCallback((task: TaskStatus) => {
+    clearPolling();
+
+    if (task.result) {
+      setTaskStatus((prev) => prev ? { ...prev, ...task, progress: 100 } : { ...task, progress: 100 });
+      setIsScanning(false);
+
+      if (task.result.results && task.result.results.length > 0) {
+        addScanResults(task.result.results);
       }
 
-      const interval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 95) {
-            clearInterval(interval);
-            return 95;
-          }
-          return prev + Math.random() * 10;
-        });
-      }, 600);
+      const navigateTimer = setTimeout(() => {
+        navigate(`/results/${task.id}`);
+      }, 1000);
 
-      return () => clearInterval(interval);
+      return () => clearTimeout(navigateTimer);
     }
-  }, [isScanning]);
+  }, [clearPolling, addScanResults, navigate]);
+
+  const handleTaskFailed = useCallback((task: TaskStatus) => {
+    clearPolling();
+    setError(task.errorMessage || 'Scan failed. Please try again.');
+    setIsScanning(false);
+    setTaskStatus(null);
+  }, [clearPolling]);
+
+  const handleTaskCancelled = useCallback(() => {
+    clearPolling();
+    setError('Scan was cancelled.');
+    setIsScanning(false);
+    setTaskStatus(null);
+  }, [clearPolling]);
 
   const handleStartScan = async () => {
     if (!url) return;
-    
-    const newScanId = `scan-${Date.now()}`;
-    
+
     setIsScanning(true);
-    setProgress(0);
     setError('');
-    setScanResult(null);
-    setScanId(newScanId);
+    setTaskStatus(null);
 
     try {
       const response = await api.post('/v1/scanner/static', { url });
-      const result = response.data.data;
-      setScanResult(result);
-      
-      if (result.results && result.results.length > 0) {
-        addScanResults(result.results);
-      }
-      
-      setProgress(100);
-      setCurrentStep('Scan complete!');
-      
-      setTimeout(() => {
-        navigate(`/results/${newScanId}`);
-      }, 800);
+      const data = response.data.data;
+
+      setTaskStatus({
+        id: data.taskId,
+        status: data.status,
+        url: data.url,
+        currentPage: 0,
+        totalPages: data.totalPages,
+        progress: 0,
+        result: null,
+        errorMessage: null,
+        queueStatus: data.queueStatus,
+      });
+
+      setQueueStatus(data.queueStatus);
     } catch (err) {
-      setError('Scan failed. Please try again.');
+      setError('Failed to create scan task. Please try again.');
       setIsScanning(false);
-      setProgress(0);
+    }
+  };
+
+  const handleCancelScan = async () => {
+    if (!taskStatus) return;
+
+    try {
+      await api.get(`/v1/tasks/${taskStatus.id}/cancel`);
+      handleTaskCancelled();
+    } catch (err) {
+      setError('Failed to cancel scan.');
+    }
+  };
+
+  const getCurrentStep = () => {
+    if (!taskStatus) return '';
+    const progress = taskStatus.progress || 0;
+    const stepIndex = Math.floor(progress / 14);
+    return scanSteps[stepIndex] || '';
+  };
+
+  const getStatusLabel = () => {
+    if (!taskStatus) return '';
+    switch (taskStatus.status) {
+      case 'pending':
+        return 'Queued';
+      case 'processing':
+        return 'Running';
+      case 'completed':
+        return 'Completed';
+      case 'failed':
+        return 'Failed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return '';
+    }
+  };
+
+  const getStatusColor = () => {
+    if (!taskStatus) return theme.palette.text.secondary;
+    switch (taskStatus.status) {
+      case 'pending':
+        return theme.palette.warning.main;
+      case 'processing':
+        return theme.palette.primary.main;
+      case 'completed':
+        return theme.palette.success.main;
+      case 'failed':
+        return theme.palette.error.main;
+      case 'cancelled':
+        return theme.palette.grey[500];
+      default:
+        return theme.palette.text.secondary;
     }
   };
 
@@ -291,14 +439,18 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
                     gap: 2,
                     px: 4,
                     py: 2,
-                    backgroundColor: `${theme.palette.primary.main}10`,
+                    backgroundColor: `${getStatusColor()}10`,
                     borderRadius: '20px',
                     mb: 4,
                   }}
                 >
-                  <CircularProgress size={20} sx={{ color: theme.palette.primary.main }} />
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.primary.main }}>
-                    Running
+                  {taskStatus?.status === 'processing' ? (
+                    <CircularProgress size={20} sx={{ color: getStatusColor() }} />
+                  ) : (
+                    <CheckCircle sx={{ fontSize: 20, color: getStatusColor() }} />
+                  )}
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: getStatusColor() }}>
+                    {getStatusLabel()}
                   </Typography>
                 </Box>
                 <Typography
@@ -310,15 +462,38 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
                     mb: 2,
                   }}
                 >
-                  AI Agent at Work
+                  {taskStatus?.status === 'pending' ? 'Scan Queued' : 'AI Agent at Work'}
                 </Typography>
                 <Typography
                   variant="body1"
                   sx={{ fontSize: '1.125rem', color: theme.palette.text.secondary }}
                 >
-                  We are scanning your site like a real user in real time
+                  {taskStatus?.status === 'pending'
+                    ? 'Your scan is in the queue. We will start processing shortly.'
+                    : 'We are scanning your site like a real user in real time'}
                 </Typography>
               </Box>
+
+              {queueStatus && queueStatus.pendingCount > 0 && (
+                <Paper
+                  sx={{
+                    p: 4,
+                    boxShadow: '0 4px 60px rgba(0, 0, 0, 0.08)',
+                    borderRadius: '16px',
+                    mb: 6,
+                    backgroundColor: `${theme.palette.warning.main}5`,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <CircularProgress size={24} sx={{ color: theme.palette.warning.main }} />
+                    <Typography variant="body1" sx={{ color: theme.palette.text.primary }}>
+                      <strong>{queueStatus.pendingCount}</strong> task(s) ahead of yours.
+                      Currently processing <strong>{queueStatus.processingCount}</strong> of{' '}
+                      <strong>{queueStatus.maxConcurrent}</strong> concurrent scans.
+                    </Typography>
+                  </Box>
+                </Paper>
+              )}
 
               <Paper
                 sx={{
@@ -376,8 +551,8 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
                     <Box
                       sx={{
                         height: '100%',
-                        backgroundColor: theme.palette.primary.main,
-                        width: `${progress}%`,
+                        backgroundColor: getStatusColor(),
+                        width: `${taskStatus?.progress || 0}%`,
                         transition: 'width 0.5s ease',
                       }}
                     />
@@ -387,18 +562,18 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
                     sx={{
                       position: 'absolute',
                       top: 60,
-                      left: `${progress}%`,
+                      left: `${taskStatus?.progress || 0}%`,
                       transform: 'translateX(-50%)',
                       px: 2,
                       py: 1,
-                      backgroundColor: theme.palette.primary.main,
+                      backgroundColor: getStatusColor(),
                       color: 'white',
                       borderRadius: '4px',
                       fontSize: '12px',
                       fontWeight: 600,
                     }}
                   >
-                    {Math.floor(progress)}%
+                    {Math.floor(taskStatus?.progress || 0)}%
                   </Box>
                 </Box>
               </Paper>
@@ -410,37 +585,56 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
                   borderRadius: '16px',
                 }}
               >
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 600, color: theme.palette.text.secondary, mb: 4 }}
-                >
-                  Scan Progress
-                </Typography>
-
-                <Box sx={{ mb: 4 }}>
-                  <Box
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                  <Typography
+                    variant="subtitle2"
+                    sx={{ fontWeight: 600, color: theme.palette.text.secondary }}
+                  >
+                    Scan Progress
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    startIcon={<Cancel sx={{ fontSize: 18 }} />}
+                    onClick={handleCancelScan}
+                    disabled={taskStatus?.status === 'completed' || taskStatus?.status === 'failed'}
                     sx={{
-                      height: 8,
-                      backgroundColor: `${theme.palette.divider}`,
-                      borderRadius: '4px',
-                      overflow: 'hidden',
+                      borderRadius: '8px',
+                      borderColor: theme.palette.error.main,
+                      color: theme.palette.error.main,
+                      '&:hover': {
+                        backgroundColor: `${theme.palette.error.main}10`,
+                        borderColor: theme.palette.error.main,
+                      },
+                      '&:disabled': {
+                        opacity: 0.5,
+                      },
                     }}
                   >
-                    <Box
-                      sx={{
-                        height: '100%',
-                        backgroundColor: theme.palette.primary.main,
-                        width: `${progress}%`,
-                        transition: 'width 0.5s ease',
-                      }}
-                    />
-                  </Box>
+                    Cancel Scan
+                  </Button>
+                </Box>
+
+                <Box sx={{ mb: 4 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={taskStatus?.progress || 0}
+                    sx={{
+                      height: 8,
+                      borderRadius: '4px',
+                      backgroundColor: theme.palette.divider,
+                      '& .MuiLinearProgress-bar': {
+                        backgroundColor: getStatusColor(),
+                        borderRadius: '4px',
+                      },
+                    }}
+                  />
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
                     <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                      {currentStep}
+                      {getCurrentStep()}
                     </Typography>
                     <Typography variant="body2" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-                      {Math.floor(progress)}%
+                      Page {taskStatus?.currentPage || 0}/{taskStatus?.totalPages || 0} -{' '}
+                      {Math.floor(taskStatus?.progress || 0)}%
                     </Typography>
                   </Box>
                 </Box>
@@ -448,8 +642,9 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                   {scanSteps.map((step, index) => {
                     const stepProgress = (index + 1) * (100 / scanSteps.length);
-                    const isCompleted = progress >= stepProgress;
-                    const isCurrent = progress >= (index * 100) / scanSteps.length && !isCompleted;
+                    const isCompleted = (taskStatus?.progress || 0) >= stepProgress;
+                    const isCurrent =
+                      (taskStatus?.progress || 0) >= (index * 100) / scanSteps.length && !isCompleted;
 
                     return (
                       <Chip
