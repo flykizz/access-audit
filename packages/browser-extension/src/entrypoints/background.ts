@@ -172,16 +172,23 @@ function setupStorageForwarding(): void {
     chrome.tabs.query({}, (tabs) => {
       for (const tab of tabs) {
         if (tab.id == null) continue;
-        try {
-          chrome.tabs.sendMessage(tab.id, {
+        // 跳过浏览器内部页面，这些页面无法注入 content script
+        if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:'))) {
+          continue;
+        }
+        chrome.tabs.sendMessage(
+          tab.id,
+          {
             type: 'AA_STORAGE_CHANGED',
             payload,
             timestamp: Date.now(),
             source: 'background',
-          });
-        } catch {
-          // content script 可能未注入，忽略
-        }
+          },
+          () => {
+            // content script 可能未注入，忽略 lastError
+            void chrome.runtime.lastError;
+          },
+        );
       }
     });
   });

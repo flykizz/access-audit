@@ -6,6 +6,7 @@ const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   srcDir: 'src',
+  outDir: 'dist',
   modules: ['@wxt-dev/module-react'],
   vite: () => ({
     define: {

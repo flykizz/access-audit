@@ -1,0 +1,64 @@
+name: CI - Build Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/browser-extension/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/browser-extension/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Extension
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        browser: [chrome, firefox]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: packages/browser-extension/package-lock.json
+
+      - name: Install dependencies
+        working-directory: packages/browser-extension
+        run: npm ci
+
+      - name: Build (${{ matrix.browser }})
+        working-directory: packages/browser-extension
+        run: npm run build:${{ matrix.browser }}
+
+      - name: Verify manifest
+        run: |
+          BROWSER_DIR="${{ matrix.browser }}"
+          if [ "$BROWSER_DIR" = "chrome" ]; then
+            BROWSER_DIR="chrome-mv3"
+          else
+            BROWSER_DIR="firefox-mv2"
+          fi
+          MANIFEST="packages/browser-extension/dist/$BROWSER_DIR/manifest.json"
+          if [ ! -f "$MANIFEST" ]; then
+            echo "Error: manifest.json not found"
+            exit 1
+          fi
+          echo "Build successful: $MANIFEST"
+          cat "$MANIFEST" | jq .
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-${{ matrix.browser }}
+          path: packages/browser-extension/dist/
+          retention-days: 7
