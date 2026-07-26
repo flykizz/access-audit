@@ -29,6 +29,7 @@ function Header({ onThemeToggle, isDarkMode }: HeaderProps) {
     { label: 'Features', href: '#features' },
     { label: 'Pricing', href: '#pricing' },
     { label: 'Docs', href: '/docs' },
+    { label: 'Test Pages', href: '/test-pages' },
   ];
 
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {

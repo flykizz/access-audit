@@ -23,6 +23,12 @@ function Footer() {
       { label: 'Refunds', href: '#refunds' },
       { label: 'Contact', href: '#contact' },
     ],
+    support: [
+      { label: 'GitHub Sponsors', href: 'https://github.com/sponsors/wangfei' },
+      { label: 'Ko-fi', href: 'https://ko-fi.com/accessaudit' },
+      { label: '爱发电', href: 'https://afdian.com/@accessaudit' },
+      { label: 'PayPal', href: 'https://paypal.me/accessaudit' },
+    ],
   };
 
   const socialLinks = [
@@ -147,6 +153,38 @@ function Footer() {
                     color: theme.palette.grey[400],
                     '&:hover': {
                       color: 'white',
+                      textDecoration: 'none',
+                    },
+                  }}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} md={3}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                mb: 4,
+                color: 'white',
+              }}
+            >
+              Support Us
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {footerLinks.support.map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{
+                    color: theme.palette.grey[400],
+                    '&:hover': {
+                      color: '#6366f1',
                       textDecoration: 'none',
                     },
                   }}

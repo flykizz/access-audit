@@ -248,6 +248,17 @@ npm run build --workspace=@accessaudit/cli
 
 Contributions are welcome! Please refer to our [development specifications](doc/development-spec.md) for more details.
 
+## 💖 Support
+
+If you find AccessAudit useful, consider supporting the project through donations:
+
+| Platform | Link |
+|----------|------|
+| GitHub Sponsors | [Sponsor on GitHub](https://github.com/sponsors/wangfei) |
+| Ko-fi | [Buy Me a Coffee](https://ko-fi.com/accessaudit) |
+| 爱发电 | [Support on Afdian](https://afdian.com/@accessaudit) |
+| PayPal | [Donate via PayPal](https://paypal.me/accessaudit) |
+
 ## 📄 License
 
 This project is licensed under the MIT License.

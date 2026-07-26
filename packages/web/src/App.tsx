@@ -19,6 +19,11 @@ import ForgotPassword from './components/ForgotPassword';
 import Docs from './components/Docs';
 import ScanPage from './components/ScanPage';
 import ResultsPage from './components/ResultsPage';
+import TestPages from './components/TestPages';
+import AuthTestPage from './components/test/AuthTestPage';
+import DataDisplayTestPage from './components/test/DataDisplayTestPage';
+import FormTestPage from './components/test/FormTestPage';
+import InteractionTestPage from './components/test/InteractionTestPage';
 import TermsOfService from './components/TermsOfService';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import OAuthCallback from './components/OAuthCallback';
@@ -74,6 +79,26 @@ function App() {
         <Route
           path="/results/:id"
           element={<ResultsPage onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />}
+        />
+        <Route
+          path="/test-pages"
+          element={<TestPages onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />}
+        />
+        <Route
+          path="/test-pages/auth"
+          element={<AuthTestPage onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />}
+        />
+        <Route
+          path="/test-pages/data-display"
+          element={<DataDisplayTestPage onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />}
+        />
+        <Route
+          path="/test-pages/form"
+          element={<FormTestPage onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />}
+        />
+        <Route
+          path="/test-pages/interaction"
+          element={<InteractionTestPage onThemeToggle={toggleTheme} isDarkMode={isDarkMode} />}
         />
         <Route
           path="/terms-of-service"
