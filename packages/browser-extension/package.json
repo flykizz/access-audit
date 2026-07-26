@@ -1,0 +1,41 @@
+{
+  "name": "@accessaudit/browser-extension",
+  "version": "1.0.0",
+  "description": "AccessAudit 浏览器扩展 - 支持 Chrome、Firefox、Edge 等多平台的无障碍检测工具",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "dev:edge": "wxt -b edge",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox",
+    "build:edge": "wxt build -b edge",
+    "build:all": "wxt build && wxt build -b firefox && wxt build -b edge",
+    "zip": "wxt zip",
+    "zip:firefox": "wxt zip -b firefox",
+    "postinstall": "wxt prepare || true"
+  },
+  "keywords": [
+    "accessibility",
+    "chrome-extension",
+    "firefox-extension",
+    "edge-extension",
+    "browser-extension",
+    "wxt",
+    "react"
+  ],
+  "author": "AccessAudit Team",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.2.2",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@wxt-dev/module-react": "^1.1.0",
+    "typescript": "^5.6.0",
+    "wxt": "^0.19.0"
+  }
+}
