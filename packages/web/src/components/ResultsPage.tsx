@@ -145,6 +145,7 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
       serious: scanResults.reduce((sum, r) => sum + r.serious, 0),
       moderate: scanResults.reduce((sum, r) => sum + r.moderate, 0),
       minor: scanResults.reduce((sum, r) => sum + r.minor, 0),
+      totalPassed: scanResults.reduce((sum, r) => sum + (r.passedRules?.length || 0), 0),
     };
   };
 
@@ -345,6 +346,11 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                     label: 'Minor',
                     value: totalStats.minor,
                     color: theme.palette.info.main,
+                  },
+                  {
+                    label: 'Passed Rules',
+                    value: totalStats.totalPassed,
+                    color: theme.palette.success.main,
                   },
                   {
                     label: 'Overall Score',
@@ -559,151 +565,130 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                       fontSize: '12px',
                     }}
                   />
+                  <Chip
+                    label={`${currentResult.passedRules?.length || 0} Passed`}
+                    sx={{
+                      px: 2.5,
+                      py: 1,
+                      backgroundColor: `${theme.palette.success.main}10`,
+                      color: theme.palette.success.main,
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                    }}
+                  />
                 </Box>
               </Box>
 
-              {currentResult.violations.length > 0 ? (
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, color: theme.palette.text.secondary, mb: 3 }}
-                  >
-                    Violations ({currentResult.violations.length})
-                  </Typography>
-                  {currentResult.violations.map((violation: Violation) => (
-                    <Accordion
-                      key={violation.id + violation.selector}
-                      expanded={expandedViolations.includes(violation.id + violation.selector)}
-                      onChange={() => toggleViolation(violation.id + violation.selector)}
-                      sx={{
-                        width: '100%',
-                        mb: 2,
-                        borderRadius: '8px',
-                        border: `1px solid ${getSeverityColor(violation.severity)}20`,
-                        '&:before': { display: 'none' },
-                      }}
+              <Box>
+                {currentResult.violations.length > 0 && (
+                  <Box mb={4}>
+                    <Typography
+                      variant="subtitle2"
+                      sx={{ fontWeight: 600, color: theme.palette.text.secondary, mb: 3 }}
                     >
-                      <AccordionSummary
-                        expandIcon={
-                          <ExpandMore sx={{ color: theme.palette.text.secondary }} />
-                        }
+                      Violations ({currentResult.violations.length})
+                    </Typography>
+                    {currentResult.violations.map((violation: Violation) => (
+                      <Accordion
+                        key={violation.id + violation.selector}
+                        expanded={expandedViolations.includes(violation.id + violation.selector)}
+                        onChange={() => toggleViolation(violation.id + violation.selector)}
                         sx={{
-                          backgroundColor: getSeverityBackgroundColor(violation.severity),
+                          width: '100%',
+                          mb: 2,
                           borderRadius: '8px',
+                          border: `1px solid ${getSeverityColor(violation.severity)}20`,
+                          '&:before': { display: 'none' },
                         }}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
-                          <Chip
-                            label={violation.severity.toUpperCase()}
-                            sx={{
-                              px: 2,
-                              py: 0.5,
-                              backgroundColor: `${getSeverityColor(
-                                violation.severity
-                              )}20`,
-                              color: getSeverityColor(violation.severity),
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                            }}
-                          />
-                          <Chip
-                            label={violation.wcagTag}
-                            sx={{
-                              px: 2,
-                              py: 0.5,
-                              backgroundColor: `${theme.palette.info.main}10`,
-                              color: theme.palette.info.main,
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                            }}
-                          />
-                          <Typography
-                            variant="body1"
-                            sx={{
-                              fontWeight: 600,
-                              color: theme.palette.text.primary,
-                              flex: 1,
-                            }}
-                          >
-                            {violation.message}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: theme.palette.text.secondary, fontSize: '12px' }}
-                          >
-                            {violation.element}
-                          </Typography>
-                        </Box>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Box sx={{ mt: 2 }}>
-                          <Typography
-                            variant="subtitle2"
-                            sx={{ fontWeight: 600, color: theme.palette.text.primary, mb: 2 }}
-                          >
-                            Fix Suggestion
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: theme.palette.text.secondary,
-                              mb: 3,
-                              backgroundColor: `${theme.palette.success.main}5`,
-                              p: 3,
-                              borderRadius: '8px',
-                            }}
-                          >
-                            {violation.fixSuggestion}
-                          </Typography>
+                        <AccordionSummary
+                          expandIcon={
+                            <ExpandMore sx={{ color: theme.palette.text.secondary }} />
+                          }
+                          sx={{
+                            backgroundColor: getSeverityBackgroundColor(violation.severity),
+                            borderRadius: '8px',
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
+                            <Chip
+                              label={violation.severity.toUpperCase()}
+                              sx={{
+                                px: 2,
+                                py: 0.5,
+                                backgroundColor: `${getSeverityColor(
+                                  violation.severity
+                                )}20`,
+                                color: getSeverityColor(violation.severity),
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                              }}
+                            />
+                            <Chip
+                              label={violation.wcagTag}
+                              sx={{
+                                px: 2,
+                                py: 0.5,
+                                backgroundColor: `${theme.palette.info.main}10`,
+                                color: theme.palette.info.main,
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                              }}
+                            />
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontWeight: 600,
+                                color: theme.palette.text.primary,
+                                flex: 1,
+                              }}
+                            >
+                              {violation.message}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{ color: theme.palette.text.secondary, fontSize: '12px' }}
+                            >
+                              {violation.element}
+                            </Typography>
+                          </Box>
+                        </AccordionSummary>
+                        <AccordionDetails>
+                          <Box sx={{ mt: 2 }}>
+                            <Typography
+                              variant="subtitle2"
+                              sx={{ fontWeight: 600, color: theme.palette.text.primary, mb: 2 }}
+                            >
+                              Fix Suggestion
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: theme.palette.text.secondary,
+                                mb: 3,
+                                backgroundColor: `${theme.palette.success.main}5`,
+                                p: 3,
+                                borderRadius: '8px',
+                              }}
+                            >
+                              {violation.fixSuggestion}
+                            </Typography>
 
-                          <Grid container spacing={3}>
-                            <Grid item xs={12} md={6}>
-                              <Typography
-                                variant="subtitle2"
-                                sx={{
-                                  fontWeight: 600,
-                                  color: theme.palette.text.primary,
-                                  mb: 1,
-                                }}
-                              >
-                                DOM Path
-                              </Typography>
-                              <Box
-                                sx={{
-                                  backgroundColor: '#f5f5f5',
-                                  p: 2,
-                                  borderRadius: '6px',
-                                  fontSize: '12px',
-                                  fontFamily: 'monospace',
-                                  color: theme.palette.text.secondary,
-                                  wordBreak: 'break-all',
-                                }}
-                              >
-                                {violation.domPath}
-                              </Box>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                              <Typography
-                                variant="subtitle2"
-                                sx={{
-                                  fontWeight: 600,
-                                  color: theme.palette.text.primary,
-                                  mb: 1,
-                                }}
-                              >
-                                Selector
-                              </Typography>
-                              <Box
-                                sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 2,
-                                }}
-                              >
+                            <Grid container spacing={3}>
+                              <Grid item xs={12} md={6}>
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{
+                                    fontWeight: 600,
+                                    color: theme.palette.text.primary,
+                                    mb: 1,
+                                  }}
+                                >
+                                  DOM Path
+                                </Typography>
                                 <Box
                                   sx={{
-                                    flex: 1,
                                     backgroundColor: '#f5f5f5',
                                     p: 2,
                                     borderRadius: '6px',
@@ -713,70 +698,163 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                                     wordBreak: 'break-all',
                                   }}
                                 >
-                                  {violation.selector}
+                                  {violation.domPath}
                                 </Box>
-                                <IconButton
-                                  onClick={() =>
-                                    copyToClipboard(violation.selector, violation.selector)
-                                  }
-                                  sx={{ color: theme.palette.text.secondary }}
+                              </Grid>
+                              <Grid item xs={12} md={6}>
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{
+                                    fontWeight: 600,
+                                    color: theme.palette.text.primary,
+                                    mb: 1,
+                                  }}
                                 >
-                                  {copiedId === violation.selector ? (
-                                    <CheckCircle sx={{ color: theme.palette.success.main }} />
-                                  ) : (
-                                    <FileCopy />
-                                  )}
-                                </IconButton>
-                              </Box>
+                                  Selector
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2,
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      flex: 1,
+                                      backgroundColor: '#f5f5f5',
+                                      p: 2,
+                                      borderRadius: '6px',
+                                      fontSize: '12px',
+                                      fontFamily: 'monospace',
+                                      color: theme.palette.text.secondary,
+                                      wordBreak: 'break-all',
+                                    }}
+                                  >
+                                    {violation.selector}
+                                  </Box>
+                                  <IconButton
+                                    onClick={() =>
+                                      copyToClipboard(violation.selector, violation.selector)
+                                    }
+                                    sx={{ color: theme.palette.text.secondary }}
+                                  >
+                                    {copiedId === violation.selector ? (
+                                      <CheckCircle sx={{ color: theme.palette.success.main }} />
+                                    ) : (
+                                      <FileCopy />
+                                    )}
+                                  </IconButton>
+                                </Box>
+                              </Grid>
                             </Grid>
-                          </Grid>
-                        </Box>
-                      </AccordionDetails>
-                    </Accordion>
-                  ))}
-                </Box>
-              ) : (
-                <Box
-                  sx={{
-                    p: 4,
-                    backgroundColor: `${theme.palette.success.main}5`,
-                    borderRadius: '8px',
-                    textAlign: 'center',
-                  }}
-                >
-                  <CheckCircle sx={{ fontSize: 28, color: theme.palette.success.main, mb: 2 }} />
-                  <Typography variant="body1" sx={{ color: theme.palette.success.main }}>
-                    No accessibility violations detected on this page.
-                  </Typography>
-                </Box>
-              )}
-
-              {(currentResult.passedRules && currentResult.passedRules.length > 0) && (
-                <Box mt={4}>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, color: theme.palette.text.secondary, mb: 3 }}
-                  >
-                    Passed Checks ({currentResult.passedRules.length})
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                    {currentResult.passedRules.map((ruleId: string) => (
-                      <Chip
-                        key={ruleId}
-                        label={ruleId.replace(/-/g, ' ')}
-                        sx={{
-                          px: 2,
-                          py: 0.5,
-                          backgroundColor: `${theme.palette.success.main}10`,
-                          color: theme.palette.success.main,
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                        }}
-                      />
+                          </Box>
+                        </AccordionDetails>
+                      </Accordion>
                     ))}
                   </Box>
-                </Box>
-              )}
+                )}
+
+                {currentResult.passedRules && currentResult.passedRules.length > 0 && (
+                  <Accordion
+                    expanded={expandedViolations.includes('passed-rules')}
+                    onChange={() => toggleViolation('passed-rules')}
+                    sx={{
+                      width: '100%',
+                      borderRadius: '8px',
+                      border: `1px solid ${theme.palette.success.main}20`,
+                      '&:before': { display: 'none' },
+                    }}
+                  >
+                    <AccordionSummary
+                      expandIcon={
+                        <ExpandMore sx={{ color: theme.palette.text.secondary }} />
+                      }
+                      sx={{
+                        backgroundColor: `${theme.palette.success.main}5`,
+                        borderRadius: '8px',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
+                        <CheckCircle sx={{ fontSize: 20, color: theme.palette.success.main }} />
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            fontWeight: 600,
+                            color: theme.palette.text.primary,
+                          }}
+                        >
+                          Passed Checks ({currentResult.passedRules.length})
+                        </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{ color: theme.palette.text.secondary, fontSize: '12px' }}
+                        >
+                          Click to expand
+                        </Typography>
+                      </Box>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <Box sx={{ mt: 2 }}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600, color: theme.palette.text.primary, mb: 3 }}
+                        >
+                          Rules that passed accessibility validation
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                          {currentResult.passedRules.map((ruleId: string) => (
+                            <Chip
+                              key={ruleId}
+                              label={ruleId.replace(/-/g, ' ')}
+                              sx={{
+                                px: 2,
+                                py: 0.5,
+                                backgroundColor: `${theme.palette.success.main}10`,
+                                color: theme.palette.success.main,
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                              }}
+                            />
+                          ))}
+                        </Box>
+                        <Box
+                          sx={{
+                            mt: 3,
+                            p: 3,
+                            backgroundColor: `${theme.palette.success.main}5`,
+                            borderRadius: '8px',
+                            borderLeft: `4px solid ${theme.palette.success.main}`,
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ color: theme.palette.success.main }}
+                          >
+                            All {currentResult.passedRules.length} accessibility rules passed validation. These areas of your page meet WCAG 2.1/2.2 AA standards.
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </AccordionDetails>
+                  </Accordion>
+                )}
+
+                {currentResult.violations.length === 0 && (!currentResult.passedRules || currentResult.passedRules.length === 0) && (
+                  <Box
+                    sx={{
+                      p: 4,
+                      backgroundColor: `${theme.palette.success.main}5`,
+                      borderRadius: '8px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <CheckCircle sx={{ fontSize: 28, color: theme.palette.success.main, mb: 2 }} />
+                    <Typography variant="body1" sx={{ color: theme.palette.success.main }}>
+                      No accessibility violations detected on this page.
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
             </Paper>
 
             <Grid container spacing={6}>

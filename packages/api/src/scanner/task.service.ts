@@ -209,7 +209,7 @@ export class TaskService implements OnModuleInit, OnModuleDestroy {
         await this.taskRepository.save(task);
 
         try {
-          const scanUrl = maxPages > 1 ? `${task.url}?page=${pageNum}` : task.url;
+          const scanUrl = maxPages > 1 && pageNum > 0 ? `${task.url}?page=${pageNum}` : task.url;
           const scanResult = await this.staticScan({
             url: scanUrl,
             rules: task.options?.rules,

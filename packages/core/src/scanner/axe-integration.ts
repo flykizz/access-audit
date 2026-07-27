@@ -20,6 +20,7 @@ export class AxeScanner {
 
     let violations: StaticViolation[] = [];
     let passedRules: string[] = [];
+    let actualUrl: string | undefined;
 
     try {
       const browser = await puppeteer.launch({
@@ -49,6 +50,8 @@ export class AxeScanner {
         });
       }, targetRules);
 
+      const actualUrl = page.url();
+
       violations = this.convertAxeResults(axeResults);
       passedRules = this.getPassedRules(axeResults);
 
@@ -63,7 +66,7 @@ export class AxeScanner {
     logger.info(`Static scan completed in ${scanTime}ms`);
 
     return {
-      url,
+      url: actualUrl || url,
       scanTime,
       totalViolations: violations.length,
       critical: violations.filter((v) => v.severity === 'critical').length,
