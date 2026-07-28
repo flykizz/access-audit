@@ -37,6 +37,8 @@ export class AxeScanner {
         timeout: 30000,
       });
 
+      const actualUrl = page.url();
+
       await page.addScriptTag({ path: require.resolve('axe-core') });
 
       const axeResults = await page.evaluate((targetRules) => {
@@ -49,8 +51,6 @@ export class AxeScanner {
           rules: ruleConfig,
         });
       }, targetRules);
-
-      const actualUrl = page.url();
 
       violations = this.convertAxeResults(axeResults);
       passedRules = this.getPassedRules(axeResults);

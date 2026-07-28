@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ScanTask, TaskStatus } from './scan-task.entity';
 import { AxeScanner, defaultRules } from '@accessaudit/core';
 import type { ScanResult } from '@accessaudit/core';
+import * as puppeteer from 'puppeteer';
 
 interface CreateTaskOptions {
   userId: string | null;
@@ -189,6 +190,72 @@ export class TaskService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /**
+   * Extract internal links from a page using Puppeteer
+   */
+  private async extractInternalLinks(baseUrl: string, maxLinks: number): Promise<string[]> {
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    try {
+      const page = await browser.newPage();
+      await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+
+      await page.goto(baseUrl, {
+        waitUntil: 'networkidle2',
+        timeout: 30000,
+      });
+
+      const baseHostname = new URL(baseUrl).hostname;
+
+      // Extract all internal links using Puppeteer API
+      const anchorElements = await page.$$('a[href]');
+      const links: string[] = [];
+
+      for (const anchor of anchorElements) {
+        const href = await anchor.getProperty('href').then(p => p.jsonValue()) as string;
+        if (!href) continue;
+
+        // Filter: only internal links
+        if (href.startsWith('#')) continue;
+        if (href.startsWith('javascript:')) continue;
+        if (href.startsWith('mailto:')) continue;
+        if (href.startsWith('tel:')) continue;
+
+        try {
+          const linkUrl = new URL(href);
+          // Only include internal links
+          if (linkUrl.hostname === baseHostname) {
+            links.push(href);
+          }
+        } catch {
+          // Invalid URL, skip
+          continue;
+        }
+      }
+
+      // Remove duplicates and filter by same hostname
+      const uniqueLinks = [...new Set(links)].filter(link => {
+        try {
+          const linkUrl = new URL(link);
+          return linkUrl.hostname === baseHostname;
+        } catch {
+          return false;
+        }
+      });
+
+      // Limit to maxLinks
+      return uniqueLinks.slice(0, maxLinks);
+    } catch (error) {
+      console.error('Error extracting links:', error);
+      return [];
+    } finally {
+      await browser.close();
+    }
+  }
+
   private async processTask(task: ScanTask) {
     try {
       task.status = 'processing';
@@ -198,32 +265,53 @@ export class TaskService implements OnModuleInit, OnModuleDestroy {
       const maxPages = task.options?.maxPages || task.totalPages || 1;
       const results: unknown[] = [];
 
-      for (let pageNum = 0; pageNum < maxPages; pageNum++) {
+      // Get list of URLs to scan
+      let urlsToScan: string[] = [task.url];
+
+      if (maxPages > 1) {
+        console.log(`[Task ${task.id}] Extracting internal links from ${task.url} (max: ${maxPages})`);
+        urlsToScan = await this.extractInternalLinks(task.url, maxPages);
+
+        // Ensure the base URL is included
+        if (!urlsToScan.includes(task.url)) {
+          urlsToScan.unshift(task.url);
+        }
+
+        console.log(`[Task ${task.id}] Found ${urlsToScan.length} URLs to scan:`, urlsToScan);
+
+        // Update total pages
+        task.totalPages = urlsToScan.length;
+        await this.taskRepository.save(task);
+      }
+
+      for (let i = 0; i < urlsToScan.length; i++) {
         if ((task.status as TaskStatus) === 'cancelled') {
           console.log(`Task ${task.id} was cancelled`);
           return;
         }
 
-        task.currentPage = pageNum + 1;
-        task.progress = Math.round(((pageNum + 1) / maxPages) * 100);
+        const scanUrl = urlsToScan[i];
+        task.currentPage = i + 1;
+        task.progress = Math.round(((i + 1) / urlsToScan.length) * 100);
         await this.taskRepository.save(task);
 
+        console.log(`[Task ${task.id}] Scanning page ${i + 1}/${urlsToScan.length}: ${scanUrl}`);
+
         try {
-          const scanUrl = maxPages > 1 && pageNum > 0 ? `${task.url}?page=${pageNum}` : task.url;
           const scanResult = await this.staticScan({
             url: scanUrl,
             rules: task.options?.rules,
             includeHidden: task.options?.includeHidden,
             timeout: task.options?.timeout,
           });
-          
+
           if (scanResult && typeof scanResult === 'object') {
             const score = this.calculateScore(scanResult);
             (scanResult as unknown as Record<string, unknown>).score = score;
           }
           results.push(scanResult);
         } catch (pageError) {
-          console.error(`Error scanning page ${pageNum + 1} for task ${task.id}:`, pageError);
+          console.error(`Error scanning page ${scanUrl} for task ${task.id}:`, pageError);
         }
       }
 

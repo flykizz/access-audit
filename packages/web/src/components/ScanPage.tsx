@@ -65,6 +65,7 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
+  const [maxPages, setMaxPages] = useState(3);
   const [isScanning, setIsScanning] = useState(false);
   const [taskStatus, setTaskStatus] = useState<TaskStatus | null>(null);
   const [error, setError] = useState('');
@@ -192,7 +193,7 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
     setTaskStatus(null);
 
     try {
-      const response = await api.post('/v1/scanner/static', { url });
+      const response = await api.post('/v1/scanner/static', { url, maxPages });
       const data = response.data.data;
 
       setTaskStatus({
@@ -321,7 +322,7 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
               </Typography>
 
               <Grid container spacing={4}>
-                <Grid item xs={12} md={10}>
+                <Grid item xs={12} md={8}>
                   <TextField
                     fullWidth
                     label="Website URL"
@@ -336,7 +337,23 @@ function ScanPage({ onThemeToggle, isDarkMode }: ScanPageProps) {
                     }}
                   />
                 </Grid>
-                <Grid item xs={12} md={2}>
+                <Grid item xs={6} md={2}>
+                  <TextField
+                    fullWidth
+                    label="Pages"
+                    type="number"
+                    value={maxPages}
+                    onChange={(e) => setMaxPages(Math.max(1, parseInt(e.target.value) || 1))}
+                    inputProps={{ min: 1 }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: '12px',
+                        height: '56px',
+                      },
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={6} md={2}>
                   <Button
                     fullWidth
                     variant="contained"

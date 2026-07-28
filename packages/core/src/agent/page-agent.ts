@@ -1,5 +1,5 @@
 import { Page, Browser, chromium } from 'playwright';
-import type { BehaviorTask, BehaviorResult, RuleResult, LLMResult, TestType } from '../types/index.js';
+import type { BehaviorTask, BehaviorResult, RuleResult, LLMResult, TestType, OperationPath, OperationStep, ExecutionLog, BehaviorTestResult } from '../types/index.js';
 import type { LLMProvider as CoreLLMProvider, LLMConfig } from '../llm/index.js';
 import { OpenAIProvider, getDefaultConfig } from '../llm/index.js';
 import { RuleEngine } from './rule-engine.js';
@@ -25,6 +25,10 @@ class MockLLMProvider implements CoreLLMProvider {
   }
 
   configure(_config: LLMConfig): void {}
+}
+
+function generateId(length: number): string {
+  return Math.random().toString(36).substring(2, 2 + length);
 }
 
 export class PageAgent {
@@ -64,6 +68,96 @@ export class PageAgent {
     }
   }
 
+  async discoverPaths(url: string, testType: TestType): Promise<OperationPath[]> {
+    if (!this.page) {
+      await this.init();
+    }
+
+    try {
+      const currentPage = this.page;
+      if (!currentPage) {
+        throw new Error('Page not initialized');
+      }
+
+      await currentPage.goto(url, { timeout: 30000, waitUntil: 'domcontentloaded' });
+
+      const paths = this.generateMockPaths(testType, url);
+      return paths;
+    } catch (error) {
+      logger.error(`Path discovery failed: ${(error as Error).message}`);
+      return [];
+    }
+  }
+
+  async executePath(path: OperationPath, testType: TestType): Promise<BehaviorTestResult> {
+    const executionLogs: ExecutionLog[] = [];
+
+    if (!this.page) {
+      await this.init();
+    }
+
+    try {
+      const currentPage = this.page;
+      if (!currentPage) {
+        throw new Error('Page not initialized');
+      }
+
+      for (const step of path.steps) {
+        const startTime = Date.now();
+        const log: ExecutionLog = {
+          stepId: step.id,
+          stepName: step.name,
+          action: step.action,
+          selector: step.selector,
+          timestamp: startTime,
+          duration: 0,
+          status: 'running',
+        };
+
+        executionLogs.push(log);
+
+        try {
+          await this.executeStep(currentPage, step);
+          log.status = 'passed';
+          log.duration = Date.now() - startTime;
+        } catch (error) {
+          log.status = 'failed';
+          log.duration = Date.now() - startTime;
+          log.error = (error as Error).message;
+          break;
+        }
+      }
+
+      const llmResult = await this.llmProvider.analyze(currentPage, testType);
+      const ruleResult = await this.executeRule(testType);
+
+      const merged = this.mergeResults(llmResult, ruleResult, testType, path.id);
+      const allPassed = executionLogs.every((log) => log.status === 'passed');
+      const status = allPassed ? merged.status : 'fail';
+
+      return {
+        ...merged,
+        executionLogs,
+        pathId: path.id,
+        status,
+        actualBehavior: allPassed ? merged.actualBehavior : `步骤执行失败: ${executionLogs.find((l) => l.status === 'failed')?.stepName}`,
+      };
+    } catch (error) {
+      logger.error(`Path execution failed: ${(error as Error).message}`);
+      return {
+        testType,
+        targetElement: '',
+        status: 'error',
+        expectedBehavior: '',
+        actualBehavior: (error as Error).message,
+        llmInsight: undefined,
+        fixSuggestion: undefined,
+        executionLogs,
+        pathId: path.id,
+      };
+    }
+  }
+
   async executeTask(task: BehaviorTask): Promise<BehaviorResult> {
     const { type, target, name } = task;
 
@@ -99,6 +193,130 @@ export class PageAgent {
     }
   }
 
+  private async executeStep(page: Page, step: OperationStep): Promise<void> {
+    switch (step.action) {
+      case 'navigate':
+        if (step.targetUrl) {
+          await page.goto(step.targetUrl, { timeout: step.timeout || 30000, waitUntil: 'domcontentloaded' });
+        }
+        break;
+      case 'click':
+        if (step.selector) {
+          await page.click(step.selector, { timeout: step.timeout || 10000 });
+        }
+        break;
+      case 'type':
+        if (step.selector && step.value) {
+          await page.fill(step.selector, step.value, { timeout: step.timeout || 10000 });
+        }
+        break;
+      case 'focus':
+        if (step.selector) {
+          await page.focus(step.selector, { timeout: step.timeout || 5000 });
+        }
+        break;
+      case 'press':
+        if (step.value) {
+          await page.keyboard.press(step.value);
+        }
+        break;
+      case 'wait':
+        await page.waitForTimeout(step.timeout || 1000);
+        break;
+    }
+  }
+
+  private generateMockPaths(testType: TestType, url: string): OperationPath[] {
+    const paths: OperationPath[] = [];
+
+    const pathGenerators: Record<TestType, () => OperationPath[]> = {
+      'keyboard-reachability': () => [
+        {
+          id: generateId(12),
+          name: '键盘遍历测试路径',
+          description: '通过 Tab 键遍历页面所有可交互元素，验证键盘可达性',
+          priority: 'high',
+          estimatedTime: 15,
+          aiConfidence: 0.95,
+          aiReasoning: '检测页面上所有 button、a、input、select、textarea 等元素是否都能通过键盘访问',
+          steps: [
+            { id: 'step-1', name: '聚焦页面', description: '将焦点移动到页面 body 元素', action: 'focus', selector: 'body', expectedResult: '页面获得焦点' },
+            { id: 'step-2', name: 'Tab 遍历所有元素', description: '按 Tab 键遍历页面上所有可交互元素', action: 'press', value: 'Tab', expectedResult: '焦点依次移动到可交互元素' },
+            { id: 'step-3', name: 'Shift+Tab 返回遍历', description: '按 Shift+Tab 键反向遍历元素', action: 'press', value: 'Shift+Tab', expectedResult: '焦点反向移动' },
+          ],
+        },
+      ],
+      'keyboard-trap': () => [
+        {
+          id: generateId(12),
+          name: '模态框焦点陷阱测试',
+          description: '打开模态框后，验证 Tab 键是否在模态框内循环，不会跳出到页面其他元素',
+          priority: 'critical',
+          estimatedTime: 20,
+          aiConfidence: 0.92,
+          aiReasoning: 'WCAG 要求模态框必须实现焦点陷阱，防止键盘用户跳出模态框',
+          steps: [
+            { id: 'step-1', name: '打开模态框', description: '点击模态框触发按钮', action: 'click', selector: '[data-modal-trigger]', expectedResult: '模态框显示' },
+            { id: 'step-2', name: 'Tab 遍历模态框内元素', description: '在模态框内按 Tab 键遍历', action: 'press', value: 'Tab', expectedResult: '焦点在模态框内元素间循环' },
+            { id: 'step-3', name: 'Shift+Tab 返回', description: '按 Shift+Tab 返回上一个元素', action: 'press', value: 'Shift+Tab', expectedResult: '焦点回到模态框第一个元素' },
+            { id: 'step-4', name: '关闭模态框', description: '点击关闭按钮关闭模态框', action: 'click', selector: '[data-modal-close]', expectedResult: '模态框关闭' },
+          ],
+        },
+      ],
+      'focus-visibility': () => [
+        {
+          id: generateId(12),
+          name: '焦点可见性验证',
+          description: '验证页面上所有可聚焦元素在获得焦点时都有可见的焦点指示器',
+          priority: 'high',
+          estimatedTime: 10,
+          aiConfidence: 0.88,
+          aiReasoning: '可见的焦点指示器对于键盘用户至关重要，确保用户知道当前焦点位置',
+          steps: [
+            { id: 'step-1', name: '聚焦第一个按钮', description: '聚焦页面上第一个按钮元素', action: 'focus', selector: 'button:first-of-type', expectedResult: '焦点指示器可见' },
+            { id: 'step-2', name: '聚焦链接', description: '聚焦页面上第一个链接元素', action: 'focus', selector: 'a[href]:first-of-type', expectedResult: '焦点指示器可见' },
+            { id: 'step-3', name: '聚焦输入框', description: '聚焦页面上第一个输入框元素', action: 'focus', selector: 'input:first-of-type', expectedResult: '焦点指示器可见' },
+          ],
+        },
+      ],
+      'focus-order': () => [
+        {
+          id: generateId(12),
+          name: 'Tab 顺序验证',
+          description: '验证 Tab 键的遍历顺序是否与视觉布局一致',
+          priority: 'medium',
+          estimatedTime: 15,
+          aiConfidence: 0.85,
+          aiReasoning: 'Tab 顺序应遵循视觉从上到下、从左到右的阅读顺序，提升可用性',
+          steps: [
+            { id: 'step-1', name: '从页面顶部开始', description: '将焦点移动到页面起点', action: 'focus', selector: 'body', expectedResult: '焦点回到起点' },
+            { id: 'step-2', name: '依次 Tab 遍历', description: '按 Tab 键遍历检查焦点顺序', action: 'press', value: 'Tab', expectedResult: '焦点按视觉顺序移动' },
+            { id: 'step-3', name: '检查特殊 Tabindex', description: '继续 Tab 检查负 tabindex 元素', action: 'press', value: 'Tab', expectedResult: '无负 tabindex 干扰' },
+          ],
+        },
+      ],
+      'modal-focus-return': () => [
+        {
+          id: generateId(12),
+          name: '模态框焦点回弹测试',
+          description: '验证关闭模态框后，焦点是否正确返回到触发按钮',
+          priority: 'critical',
+          estimatedTime: 15,
+          aiConfidence: 0.90,
+          aiReasoning: '关闭模态框后焦点应返回到触发元素，保持用户操作上下文',
+          steps: [
+            { id: 'step-1', name: '记录触发按钮', description: '聚焦并记录模态框触发按钮', action: 'focus', selector: '[data-modal-trigger]', expectedResult: '触发按钮获得焦点' },
+            { id: 'step-2', name: '点击打开模态框', description: '点击触发按钮打开模态框', action: 'click', selector: '[data-modal-trigger]', expectedResult: '模态框打开' },
+            { id: 'step-3', name: '关闭模态框', description: '点击关闭按钮关闭模态框', action: 'click', selector: '[data-modal-close]', expectedResult: '模态框关闭' },
+            { id: 'step-4', name: '验证焦点返回', description: '检查焦点是否正确返回', action: 'press', value: 'Tab', expectedResult: '焦点应仍在触发按钮或其附近' },
+          ],
+        },
+      ],
+    };
+
+    return pathGenerators[testType]?.() ?? [];
+  }
+
   private isUrl(str: string): boolean {
     try {
       new URL(str);
@@ -122,7 +340,7 @@ export class PageAgent {
     ruleResult: RuleResult,
     testType: TestType,
     targetElement: string,
-    name: string
+    name?: string
   ): BehaviorResult {
     let status = ruleResult.status;
     let llmInsight = llmResult.insight;

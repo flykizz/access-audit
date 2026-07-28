@@ -15,6 +15,9 @@ import type {
   ScanOptions,
   ScanResult,
   ScanState,
+  OperationPath,
+  BehaviorTestResult,
+  TestType,
 } from './types';
 import { ScanMessageType, StorageKeys } from './types';
 import { authManager } from './auth';
@@ -199,6 +202,38 @@ export class ScanService {
     }
     const data = await response.json();
     return (data.rules ?? data ?? []) as ScannerRule[];
+  }
+
+  /** 发现操作路径：POST /api/v1/agent/paths */
+  async discoverPaths(url: string, testType: TestType): Promise<OperationPath[]> {
+    const response = await authManager.fetchWithAuth(
+      `${API_BASE_URL}/api/v1/agent/paths`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ url, testType }),
+      },
+    );
+    if (!response.ok) {
+      throw await this.toScanError(response, '路径发现失败');
+    }
+    const data = await response.json();
+    return (data.data ?? data ?? []) as OperationPath[];
+  }
+
+  /** 执行行为测试路径：POST /api/v1/agent/execute-path */
+  async executeBehaviorTest(url: string, testType: TestType, path: OperationPath): Promise<BehaviorTestResult> {
+    const response = await authManager.fetchWithAuth(
+      `${API_BASE_URL}/api/v1/agent/execute-path`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ url, testType, path }),
+      },
+    );
+    if (!response.ok) {
+      throw await this.toScanError(response, '行为测试执行失败');
+    }
+    const data = await response.json();
+    return (data.data ?? data) as BehaviorTestResult;
   }
 
   /* ------------------------------------------------------------------ */

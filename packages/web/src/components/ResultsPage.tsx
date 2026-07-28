@@ -15,6 +15,14 @@ import {
   Alert,
   Tabs,
   Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Collapse,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -31,7 +39,6 @@ import {
 } from '@mui/icons-material';
 import Header from './Header';
 import Footer from './Footer';
-import { useAppStore } from '../store/appStore';
 import { exportToJSON, exportToHTML, exportToPDF, createIssue } from '../utils/export';
 import type { ScanResult } from '@accessaudit/core';
 
@@ -67,12 +74,65 @@ interface SingleScanResult {
 function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
   const theme = useTheme();
   const { id } = useParams<{ id: string }>();
-  const scanResults = useAppStore((state) => state.scanResults);
+  const [scanResults, setScanResults] = useState<SingleScanResult[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'desktop' | 'mobile'>('desktop');
   const [expandedViolations, setExpandedViolations] = useState<string[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [selectedPageIndex, setSelectedPageIndex] = useState(0);
+  const [selectedPageIndex, setSelectedPageIndex] = useState<number | null>(null);
   const clipboardTimeoutRef = useRef<number | null>(null);
+
+  // Fetch task results from API based on URL parameter
+  useEffect(() => {
+    const fetchTaskResults = async () => {
+      if (!id) {
+        setError('No task ID provided');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:3000/api/v1/tasks/${id}`);
+        const data = await response.json() as {
+          success: boolean;
+          message?: string;
+          data?: {
+            status: string;
+            result?: {
+              results: SingleScanResult[];
+            };
+            errorMessage?: string;
+          };
+        };
+
+        if (!data.success) {
+          throw data.message ?? 'Failed to fetch task results';
+        }
+
+        if (data.data?.status === 'completed' && data.data.result?.results) {
+          setScanResults(data.data.result.results);
+        } else if (data.data?.status === 'failed') {
+          setError(data.data.errorMessage ?? 'Scan task failed');
+        } else {
+          setError(`Task status: ${data.data?.status ?? 'unknown'}`);
+        }
+      } catch (err) {
+        console.error('Error fetching task results:', err);
+        let errorMsg = 'Failed to load results';
+        if (typeof err === 'string') {
+          errorMsg = err;
+        } else if (err && typeof err === 'object' && 'message' in err) {
+          errorMsg = (err as { message: string }).message;
+        }
+        setError(errorMsg);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTaskResults();
+  }, [id]);
 
   const toggleViolation = (id: string) => {
     setExpandedViolations((prev) =>
@@ -179,6 +239,47 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
     createIssue(getExportData());
   };
 
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
+        <Header onThemeToggle={onThemeToggle} isDarkMode={isDarkMode} />
+        <main>
+          <Box sx={{ px: { xs: 4, md: 8 }, py: { xs: 6, md: 8 } }}>
+            <Box sx={{ maxWidth: '1200px', mx: 'auto', textAlign: 'center' }}>
+              <Typography variant="h6">Loading scan results...</Typography>
+            </Box>
+          </Box>
+        </main>
+        <Footer />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
+        <Header onThemeToggle={onThemeToggle} isDarkMode={isDarkMode} />
+        <main>
+          <Box sx={{ px: { xs: 4, md: 8 }, py: { xs: 6, md: 8 } }}>
+            <Box sx={{ maxWidth: '1200px', mx: 'auto', textAlign: 'center' }}>
+              <Alert severity="error" sx={{ mb: 4 }}>
+                {error}
+              </Alert>
+              <Button
+                variant="contained"
+                onClick={() => (window.location.href = '/scan')}
+                sx={{ backgroundColor: theme.palette.primary.main }}
+              >
+                Go to Scan
+              </Button>
+            </Box>
+          </Box>
+        </main>
+        <Footer />
+      </Box>
+    );
+  }
+
   if (scanResults.length === 0) {
     return (
       <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
@@ -204,7 +305,7 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
     );
   }
 
-  const currentResult = scanResults[selectedPageIndex];
+  const currentResult = scanResults[selectedPageIndex ?? 0];
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: theme.palette.background.default }}>
@@ -450,49 +551,7 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
               </Box>
             </Paper>
 
-            {scanResults.length > 1 && (
-              <Paper
-                sx={{
-                  p: { xs: 4, md: 6 },
-                  boxShadow: '0 4px 60px rgba(0, 0, 0, 0.08)',
-                  borderRadius: '16px',
-                  mb: 6,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 700, color: theme.palette.text.primary, mb: 4 }}
-                >
-                  Pages Scanned
-                </Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                  {scanResults.map((result, index) => (
-                    <Chip
-                      key={index}
-                      label={`Page ${index + 1}`}
-                      onClick={() => setSelectedPageIndex(index)}
-                      sx={{
-                        px: 3,
-                        py: 1.5,
-                        backgroundColor:
-                          selectedPageIndex === index
-                            ? `${theme.palette.primary.main}10`
-                            : `${theme.palette.grey[100]}`,
-                        color:
-                          selectedPageIndex === index
-                            ? theme.palette.primary.main
-                            : theme.palette.text.secondary,
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          backgroundColor: `${theme.palette.primary.main}5`,
-                        },
-                      }}
-                    />
-                  ))}
-                </Box>
-              </Paper>
-            )}
+
 
             <Paper
               sx={{
@@ -502,311 +561,162 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                 mb: 6,
               }}
             >
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  mb: 4,
-                }}
+              <Typography
+                variant="h6"
+                sx={{ fontWeight: 700, color: theme.palette.text.primary, mb: 4 }}
               >
-                <Box>
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: 700, color: theme.palette.text.primary }}
-                  >
-                    Page Details
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: theme.palette.text.secondary, mt: 1 }}
-                  >
-                    {currentResult.url}
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Box
-                    sx={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      backgroundColor: currentResult.score !== undefined && currentResult.score >= 80
-                        ? `${theme.palette.success.main}20`
-                        : currentResult.score !== undefined && currentResult.score >= 60
-                        ? `${theme.palette.warning.main}20`
-                        : `${theme.palette.error.main}20`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Typography
-                      variant="h6"
-                      sx={{
-                        fontWeight: 700,
-                        color: currentResult.score !== undefined && currentResult.score >= 80
-                          ? theme.palette.success.main
-                          : currentResult.score !== undefined && currentResult.score >= 60
-                          ? theme.palette.warning.main
-                          : theme.palette.error.main,
-                      }}
-                    >
-                      {currentResult.score || '-'}
-                    </Typography>
-                  </Box>
-                  <Chip
-                    label={`${currentResult.critical} Critical / ${currentResult.serious} Serious`}
-                    sx={{
-                      px: 2.5,
-                      py: 1,
-                      backgroundColor: `${theme.palette.error.main}10`,
-                      color: theme.palette.error.main,
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                    }}
-                  />
-                  <Chip
-                    label={`${currentResult.passedRules?.length || 0} Passed`}
-                    sx={{
-                      px: 2.5,
-                      py: 1,
-                      backgroundColor: `${theme.palette.success.main}10`,
-                      color: theme.palette.success.main,
-                      borderRadius: '8px',
-                      fontSize: '12px',
-                    }}
-                  />
-                </Box>
-              </Box>
+                Scan Results
+              </Typography>
 
-              <Box>
-                {currentResult.violations.length > 0 && (
-                  <Box mb={4}>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, color: theme.palette.text.secondary, mb: 3 }}
-                    >
-                      Violations ({currentResult.violations.length})
-                    </Typography>
-                    {currentResult.violations.map((violation: Violation) => (
-                      <Accordion
-                        key={violation.id + violation.selector}
-                        expanded={expandedViolations.includes(violation.id + violation.selector)}
-                        onChange={() => toggleViolation(violation.id + violation.selector)}
-                        sx={{
-                          width: '100%',
-                          mb: 2,
-                          borderRadius: '8px',
-                          border: `1px solid ${getSeverityColor(violation.severity)}20`,
-                          '&:before': { display: 'none' },
-                        }}
-                      >
-                        <AccordionSummary
-                          expandIcon={
-                            <ExpandMore sx={{ color: theme.palette.text.secondary }} />
-                          }
+              <TableContainer sx={{ borderRadius: '12px', overflow: 'hidden' }}>
+                <Table>
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
+                      <TableCell sx={{ fontWeight: 600, color: theme.palette.text.primary, px: 4, py: 3 }}>
+                        URL
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: theme.palette.text.primary, px: 4, py: 3, textAlign: 'center' }}>
+                        Score
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: theme.palette.text.primary, px: 4, py: 3, textAlign: 'center' }}>
+                        Critical
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: theme.palette.text.primary, px: 4, py: 3, textAlign: 'center' }}>
+                        Serious
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: theme.palette.text.primary, px: 4, py: 3, textAlign: 'center' }}>
+                        Moderate
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: theme.palette.text.primary, px: 4, py: 3, textAlign: 'center' }}>
+                        Minor
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: theme.palette.text.primary, px: 4, py: 3, textAlign: 'center' }}>
+                        Passed
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: theme.palette.text.primary, px: 4, py: 3, textAlign: 'center' }}>
+                        Details
+                      </TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {scanResults.map((result, index) => (
+                      <>
+                        <TableRow
+                          key={index}
                           sx={{
-                            backgroundColor: getSeverityBackgroundColor(violation.severity),
-                            borderRadius: '8px',
+                            '&:hover': { backgroundColor: theme.palette.grey[50] },
+                            cursor: 'pointer',
                           }}
+                          onClick={() => setSelectedPageIndex(selectedPageIndex === index ? null : index)}
                         >
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
+                          <TableCell sx={{ px: 4, py: 3 }}>
+                            <Tooltip title={result.url} arrow>
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: theme.palette.text.primary,
+                                  maxWidth: 300,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {result.url}
+                              </Typography>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell sx={{ px: 4, py: 3, textAlign: 'center' }}>
+                            <Box
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: '50%',
+                                backgroundColor: result.score !== undefined && result.score >= 80
+                                  ? `${theme.palette.success.main}20`
+                                  : result.score !== undefined && result.score >= 60
+                                  ? `${theme.palette.warning.main}20`
+                                  : `${theme.palette.error.main}20`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto',
+                              }}
+                            >
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  fontWeight: 700,
+                                  color:
+                                    result.score !== undefined && result.score >= 80
+                                      ? theme.palette.success.main
+                                      : result.score !== undefined && result.score >= 60
+                                      ? theme.palette.warning.main
+                                      : theme.palette.error.main,
+                                }}
+                              >
+                                {result.score || '-'}
+                              </Typography>
+                            </Box>
+                          </TableCell>
+                          <TableCell sx={{ px: 4, py: 3, textAlign: 'center' }}>
                             <Chip
-                              label={violation.severity.toUpperCase()}
+                              label={result.critical}
                               sx={{
                                 px: 2,
                                 py: 0.5,
-                                backgroundColor: `${getSeverityColor(
-                                  violation.severity
-                                )}20`,
-                                color: getSeverityColor(violation.severity),
+                                backgroundColor: `${theme.palette.error.main}10`,
+                                color: theme.palette.error.main,
                                 borderRadius: '4px',
-                                fontSize: '11px',
+                                fontSize: '12px',
                                 fontWeight: 600,
                               }}
                             />
+                          </TableCell>
+                          <TableCell sx={{ px: 4, py: 3, textAlign: 'center' }}>
                             <Chip
-                              label={violation.wcagTag}
+                              label={result.serious}
+                              sx={{
+                                px: 2,
+                                py: 0.5,
+                                backgroundColor: `${theme.palette.warning.main}10`,
+                                color: theme.palette.warning.main,
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell sx={{ px: 4, py: 3, textAlign: 'center' }}>
+                            <Chip
+                              label={result.moderate}
                               sx={{
                                 px: 2,
                                 py: 0.5,
                                 backgroundColor: `${theme.palette.info.main}10`,
                                 color: theme.palette.info.main,
                                 borderRadius: '4px',
-                                fontSize: '11px',
+                                fontSize: '12px',
+                                fontWeight: 600,
                               }}
                             />
-                            <Typography
-                              variant="body1"
-                              sx={{
-                                fontWeight: 600,
-                                color: theme.palette.text.primary,
-                                flex: 1,
-                              }}
-                            >
-                              {violation.message}
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{ color: theme.palette.text.secondary, fontSize: '12px' }}
-                            >
-                              {violation.element}
-                            </Typography>
-                          </Box>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                          <Box sx={{ mt: 2 }}>
-                            <Typography
-                              variant="subtitle2"
-                              sx={{ fontWeight: 600, color: theme.palette.text.primary, mb: 2 }}
-                            >
-                              Fix Suggestion
-                            </Typography>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                color: theme.palette.text.secondary,
-                                mb: 3,
-                                backgroundColor: `${theme.palette.success.main}5`,
-                                p: 3,
-                                borderRadius: '8px',
-                              }}
-                            >
-                              {violation.fixSuggestion}
-                            </Typography>
-
-                            <Grid container spacing={3}>
-                              <Grid item xs={12} md={6}>
-                                <Typography
-                                  variant="subtitle2"
-                                  sx={{
-                                    fontWeight: 600,
-                                    color: theme.palette.text.primary,
-                                    mb: 1,
-                                  }}
-                                >
-                                  DOM Path
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    backgroundColor: '#f5f5f5',
-                                    p: 2,
-                                    borderRadius: '6px',
-                                    fontSize: '12px',
-                                    fontFamily: 'monospace',
-                                    color: theme.palette.text.secondary,
-                                    wordBreak: 'break-all',
-                                  }}
-                                >
-                                  {violation.domPath}
-                                </Box>
-                              </Grid>
-                              <Grid item xs={12} md={6}>
-                                <Typography
-                                  variant="subtitle2"
-                                  sx={{
-                                    fontWeight: 600,
-                                    color: theme.palette.text.primary,
-                                    mb: 1,
-                                  }}
-                                >
-                                  Selector
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 2,
-                                  }}
-                                >
-                                  <Box
-                                    sx={{
-                                      flex: 1,
-                                      backgroundColor: '#f5f5f5',
-                                      p: 2,
-                                      borderRadius: '6px',
-                                      fontSize: '12px',
-                                      fontFamily: 'monospace',
-                                      color: theme.palette.text.secondary,
-                                      wordBreak: 'break-all',
-                                    }}
-                                  >
-                                    {violation.selector}
-                                  </Box>
-                                  <IconButton
-                                    onClick={() =>
-                                      copyToClipboard(violation.selector, violation.selector)
-                                    }
-                                    sx={{ color: theme.palette.text.secondary }}
-                                  >
-                                    {copiedId === violation.selector ? (
-                                      <CheckCircle sx={{ color: theme.palette.success.main }} />
-                                    ) : (
-                                      <FileCopy />
-                                    )}
-                                  </IconButton>
-                                </Box>
-                              </Grid>
-                            </Grid>
-                          </Box>
-                        </AccordionDetails>
-                      </Accordion>
-                    ))}
-                  </Box>
-                )}
-
-                {currentResult.passedRules && currentResult.passedRules.length > 0 && (
-                  <Accordion
-                    expanded={expandedViolations.includes('passed-rules')}
-                    onChange={() => toggleViolation('passed-rules')}
-                    sx={{
-                      width: '100%',
-                      borderRadius: '8px',
-                      border: `1px solid ${theme.palette.success.main}20`,
-                      '&:before': { display: 'none' },
-                    }}
-                  >
-                    <AccordionSummary
-                      expandIcon={
-                        <ExpandMore sx={{ color: theme.palette.text.secondary }} />
-                      }
-                      sx={{
-                        backgroundColor: `${theme.palette.success.main}5`,
-                        borderRadius: '8px',
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
-                        <CheckCircle sx={{ fontSize: 20, color: theme.palette.success.main }} />
-                        <Typography
-                          variant="body1"
-                          sx={{
-                            fontWeight: 600,
-                            color: theme.palette.text.primary,
-                          }}
-                        >
-                          Passed Checks ({currentResult.passedRules.length})
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ color: theme.palette.text.secondary, fontSize: '12px' }}
-                        >
-                          Click to expand
-                        </Typography>
-                      </Box>
-                    </AccordionSummary>
-                    <AccordionDetails>
-                      <Box sx={{ mt: 2 }}>
-                        <Typography
-                          variant="subtitle2"
-                          sx={{ fontWeight: 600, color: theme.palette.text.primary, mb: 3 }}
-                        >
-                          Rules that passed accessibility validation
-                        </Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                          {currentResult.passedRules.map((ruleId: string) => (
+                          </TableCell>
+                          <TableCell sx={{ px: 4, py: 3, textAlign: 'center' }}>
                             <Chip
-                              key={ruleId}
-                              label={ruleId.replace(/-/g, ' ')}
+                              label={result.minor}
+                              sx={{
+                                px: 2,
+                                py: 0.5,
+                                backgroundColor: `${theme.palette.grey[200]}`,
+                                color: theme.palette.grey[600],
+                                borderRadius: '4px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell sx={{ px: 4, py: 3, textAlign: 'center' }}>
+                            <Chip
+                              label={result.passedRules?.length || 0}
                               sx={{
                                 px: 2,
                                 py: 0.5,
@@ -814,47 +724,325 @@ function ResultsPage({ onThemeToggle, isDarkMode }: ResultsPageProps) {
                                 color: theme.palette.success.main,
                                 borderRadius: '4px',
                                 fontSize: '12px',
+                                fontWeight: 600,
                               }}
                             />
-                          ))}
-                        </Box>
-                        <Box
-                          sx={{
-                            mt: 3,
-                            p: 3,
-                            backgroundColor: `${theme.palette.success.main}5`,
-                            borderRadius: '8px',
-                            borderLeft: `4px solid ${theme.palette.success.main}`,
-                          }}
-                        >
-                          <Typography
-                            variant="body2"
-                            sx={{ color: theme.palette.success.main }}
-                          >
-                            All {currentResult.passedRules.length} accessibility rules passed validation. These areas of your page meet WCAG 2.1/2.2 AA standards.
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </AccordionDetails>
-                  </Accordion>
-                )}
+                          </TableCell>
+                          <TableCell sx={{ px: 4, py: 3, textAlign: 'center' }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: theme.palette.primary.main,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {selectedPageIndex === index ? '▼' : '▶'}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell colSpan={8}>
+                            <Collapse in={selectedPageIndex === index}>
+                              <Box sx={{ p: 4, backgroundColor: theme.palette.grey[50], borderRadius: '0 0 12px 12px' }}>
+                                <Typography
+                                  variant="subtitle1"
+                                  sx={{ fontWeight: 600, color: theme.palette.text.primary, mb: 3 }}
+                                >
+                                  Details for: {result.url}
+                                </Typography>
 
-                {currentResult.violations.length === 0 && (!currentResult.passedRules || currentResult.passedRules.length === 0) && (
-                  <Box
-                    sx={{
-                      p: 4,
-                      backgroundColor: `${theme.palette.success.main}5`,
-                      borderRadius: '8px',
-                      textAlign: 'center',
-                    }}
-                  >
-                    <CheckCircle sx={{ fontSize: 28, color: theme.palette.success.main, mb: 2 }} />
-                    <Typography variant="body1" sx={{ color: theme.palette.success.main }}>
-                      No accessibility violations detected on this page.
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
+                                {result.violations.length > 0 && (
+                                  <Box mb={4}>
+                                    <Typography
+                                      variant="subtitle2"
+                                      sx={{ fontWeight: 600, color: theme.palette.text.secondary, mb: 3 }}
+                                    >
+                                      Violations ({result.violations.length})
+                                    </Typography>
+                                    {result.violations.map((violation: Violation) => (
+                                      <Accordion
+                                        key={violation.id + violation.selector}
+                                        expanded={expandedViolations.includes(violation.id + violation.selector)}
+                                        onChange={() => toggleViolation(violation.id + violation.selector)}
+                                        sx={{
+                                          width: '100%',
+                                          mb: 2,
+                                          borderRadius: '8px',
+                                          border: `1px solid ${getSeverityColor(violation.severity)}20`,
+                                          '&:before': { display: 'none' },
+                                        }}
+                                      >
+                                        <AccordionSummary
+                                          expandIcon={
+                                            <ExpandMore sx={{ color: theme.palette.text.secondary }} />
+                                          }
+                                          sx={{
+                                            backgroundColor: getSeverityBackgroundColor(violation.severity),
+                                            borderRadius: '8px',
+                                          }}
+                                        >
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
+                                            <Chip
+                                              label={violation.severity.toUpperCase()}
+                                              sx={{
+                                                px: 2,
+                                                py: 0.5,
+                                                backgroundColor: `${getSeverityColor(
+                                                  violation.severity
+                                                )}20`,
+                                                color: getSeverityColor(violation.severity),
+                                                borderRadius: '4px',
+                                                fontSize: '11px',
+                                                fontWeight: 600,
+                                              }}
+                                            />
+                                            <Chip
+                                              label={violation.wcagTag}
+                                              sx={{
+                                                px: 2,
+                                                py: 0.5,
+                                                backgroundColor: `${theme.palette.info.main}10`,
+                                                color: theme.palette.info.main,
+                                                borderRadius: '4px',
+                                                fontSize: '11px',
+                                              }}
+                                            />
+                                            <Typography
+                                              variant="body1"
+                                              sx={{
+                                                fontWeight: 600,
+                                                color: theme.palette.text.primary,
+                                                flex: 1,
+                                              }}
+                                            >
+                                              {violation.message}
+                                            </Typography>
+                                            <Typography
+                                              variant="body2"
+                                              sx={{ color: theme.palette.text.secondary }}
+                                            >
+                                              {violation.element.length > 50
+                                                ? violation.element.substring(0, 50) + '...'
+                                                : violation.element}
+                                            </Typography>
+                                          </Box>
+                                        </AccordionSummary>
+                                        <AccordionDetails>
+                                          <Box sx={{ mt: 2 }}>
+                                            <Typography
+                                              variant="subtitle2"
+                                              sx={{
+                                                fontWeight: 600,
+                                                color: theme.palette.text.primary,
+                                                mb: 2,
+                                              }}
+                                            >
+                                              Fix Suggestion
+                                            </Typography>
+                                            <Box
+                                              sx={{
+                                                p: 3,
+                                                backgroundColor: `${getSeverityColor(violation.severity)}5`,
+                                                borderRadius: '8px',
+                                                borderLeft: `4px solid ${getSeverityColor(violation.severity)}`,
+                                              }}
+                                            >
+                                              <Typography
+                                                variant="body2"
+                                                sx={{ color: getSeverityColor(violation.severity) }}
+                                              >
+                                                {violation.fixSuggestion}
+                                              </Typography>
+
+                                              <Grid container spacing={3}>
+                                                <Grid item xs={12} md={6}>
+                                                  <Typography
+                                                    variant="subtitle2"
+                                                    sx={{
+                                                      fontWeight: 600,
+                                                      color: theme.palette.text.primary,
+                                                      mb: 1,
+                                                    }}
+                                                  >
+                                                    DOM Path
+                                                  </Typography>
+                                                  <Box
+                                                    sx={{
+                                                      backgroundColor: '#f5f5f5',
+                                                      p: 2,
+                                                      borderRadius: '6px',
+                                                      fontSize: '12px',
+                                                      fontFamily: 'monospace',
+                                                      color: theme.palette.text.secondary,
+                                                      wordBreak: 'break-all',
+                                                    }}
+                                                  >
+                                                    {violation.domPath}
+                                                  </Box>
+                                                </Grid>
+                                                <Grid item xs={12} md={6}>
+                                                  <Typography
+                                                    variant="subtitle2"
+                                                    sx={{
+                                                      fontWeight: 600,
+                                                      color: theme.palette.text.primary,
+                                                      mb: 1,
+                                                    }}
+                                                  >
+                                                    Selector
+                                                  </Typography>
+                                                  <Box
+                                                    sx={{
+                                                      display: 'flex',
+                                                      alignItems: 'center',
+                                                      gap: 2,
+                                                    }}
+                                                  >
+                                                    <Box
+                                                      sx={{
+                                                        flex: 1,
+                                                        backgroundColor: '#f5f5f5',
+                                                        p: 2,
+                                                        borderRadius: '6px',
+                                                        fontSize: '12px',
+                                                        fontFamily: 'monospace',
+                                                        color: theme.palette.text.secondary,
+                                                        wordBreak: 'break-all',
+                                                      }}
+                                                    >
+                                                      {violation.selector}
+                                                    </Box>
+                                                    <IconButton
+                                                      onClick={() =>
+                                                        copyToClipboard(violation.selector, violation.selector)
+                                                      }
+                                                      sx={{ color: theme.palette.text.secondary }}
+                                                    >
+                                                      {copiedId === violation.selector ? (
+                                                        <CheckCircle sx={{ color: theme.palette.success.main }} />
+                                                      ) : (
+                                                        <FileCopy />
+                                                      )}
+                                                    </IconButton>
+                                                  </Box>
+                                                </Grid>
+                                              </Grid>
+                                            </Box>
+                                          </Box>
+                                        </AccordionDetails>
+                                      </Accordion>
+                                    ))}
+                                  </Box>
+                                )}
+
+                                {result.passedRules && result.passedRules.length > 0 && (
+                                  <Accordion
+                                    expanded={expandedViolations.includes('passed-rules')}
+                                    onChange={() => toggleViolation('passed-rules')}
+                                    sx={{
+                                      width: '100%',
+                                      borderRadius: '8px',
+                                      border: `1px solid ${theme.palette.success.main}20`,
+                                      '&:before': { display: 'none' },
+                                    }}
+                                  >
+                                    <AccordionSummary
+                                      expandIcon={
+                                        <ExpandMore sx={{ color: theme.palette.text.secondary }} />
+                                      }
+                                      sx={{
+                                        backgroundColor: `${theme.palette.success.main}5`,
+                                        borderRadius: '8px',
+                                      }}
+                                    >
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flex: 1 }}>
+                                        <CheckCircle sx={{ fontSize: 20, color: theme.palette.success.main }} />
+                                        <Typography
+                                          variant="body1"
+                                          sx={{
+                                            fontWeight: 600,
+                                            color: theme.palette.text.primary,
+                                          }}
+                                        >
+                                          Passed Checks ({result.passedRules.length})
+                                        </Typography>
+                                        <Typography
+                                          variant="body2"
+                                          sx={{ color: theme.palette.text.secondary, fontSize: '12px' }}
+                                        >
+                                          Click to expand
+                                        </Typography>
+                                      </Box>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+                                      <Box sx={{ mt: 2 }}>
+                                        <Typography
+                                          variant="subtitle2"
+                                          sx={{ fontWeight: 600, color: theme.palette.text.primary, mb: 3 }}
+                                        >
+                                          Rules that passed accessibility validation
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                                          {result.passedRules.map((ruleId: string) => (
+                                            <Chip
+                                              key={ruleId}
+                                              label={ruleId.replace(/-/g, ' ')}
+                                              sx={{
+                                                px: 2,
+                                                py: 0.5,
+                                                backgroundColor: `${theme.palette.success.main}10`,
+                                                color: theme.palette.success.main,
+                                                borderRadius: '4px',
+                                                fontSize: '12px',
+                                              }}
+                                            />
+                                          ))}
+                                        </Box>
+                                        <Box
+                                          sx={{
+                                            mt: 3,
+                                            p: 3,
+                                            backgroundColor: `${theme.palette.success.main}5`,
+                                            borderRadius: '8px',
+                                            borderLeft: `4px solid ${theme.palette.success.main}`,
+                                          }}
+                                        >
+                                          <Typography
+                                            variant="body2"
+                                            sx={{ color: theme.palette.success.main }}
+                                          >
+                                            All {result.passedRules.length} accessibility rules passed validation. These areas of your page meet WCAG 2.1/2.2 AA standards.
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                    </AccordionDetails>
+                                  </Accordion>
+                                )}
+
+                                {result.violations.length === 0 && (!result.passedRules || result.passedRules.length === 0) && (
+                                  <Box
+                                    sx={{
+                                      p: 4,
+                                      backgroundColor: `${theme.palette.success.main}5`,
+                                      borderRadius: '8px',
+                                      textAlign: 'center',
+                                    }}
+                                  >
+                                    <CheckCircle sx={{ fontSize: 28, color: theme.palette.success.main, mb: 2 }} />
+                                    <Typography variant="body1" sx={{ color: theme.palette.success.main }}>
+                                      No accessibility violations detected on this page.
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Collapse>
+                          </TableCell>
+                        </TableRow>
+                      </>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Paper>
 
             <Grid container spacing={6}>

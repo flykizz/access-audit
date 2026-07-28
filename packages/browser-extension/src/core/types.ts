@@ -110,6 +110,65 @@ export interface ScanOptions {
   resume?: boolean;
   /** 自定义超时（ms） */
   timeout?: number;
+  /** 扫描模式：static（静态扫描）| behavior（行为测试） */
+  mode?: 'static' | 'behavior';
+  /** 行为测试类型 */
+  testType?: TestType;
+}
+
+export type TestType =
+  | 'keyboard-reachability'
+  | 'keyboard-trap'
+  | 'focus-visibility'
+  | 'focus-order'
+  | 'modal-focus-return';
+
+export interface OperationPath {
+  id: string;
+  name: string;
+  description: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  estimatedTime: number;
+  steps: OperationStep[];
+  aiConfidence: number;
+  aiReasoning: string;
+}
+
+export interface OperationStep {
+  id: string;
+  name: string;
+  description: string;
+  action: 'click' | 'type' | 'focus' | 'press' | 'wait' | 'navigate';
+  selector?: string;
+  value?: string;
+  targetUrl?: string;
+  timeout?: number;
+  expectedResult?: string;
+}
+
+export interface ExecutionLog {
+  stepId: string;
+  stepName: string;
+  action: string;
+  selector?: string;
+  timestamp: number;
+  duration: number;
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
+  screenshot?: string;
+  error?: string;
+  actualResult?: string;
+}
+
+export interface BehaviorTestResult {
+  testType: TestType;
+  targetElement: string;
+  status: 'pass' | 'fail' | 'error' | 'unknown';
+  expectedBehavior: string;
+  actualBehavior: string;
+  llmInsight?: string;
+  fixSuggestion?: string;
+  executionLogs: ExecutionLog[];
+  pathId?: string;
 }
 
 /** 历史扫描记录（持久化到 SCAN_HISTORY） */

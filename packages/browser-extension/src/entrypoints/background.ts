@@ -23,6 +23,8 @@ import type {
   ScanResult,
   ScanState,
   UserInfo,
+  OperationPath,
+  TestType,
 } from '@/core/types';
 import { pageController } from '@/agent/PageController';
 import type { PageControlMessage } from '@/agent/PageController';
@@ -45,6 +47,8 @@ type InternalMessageType =
   | 'AA_GET_RULES'
   | 'AA_GET_HISTORY'
   | 'AA_GENERATE_BRIDGE_TOKEN'
+  | 'AA_DISCOVER_PATHS'
+  | 'AA_EXECUTE_BEHAVIOR_TEST'
   | 'TAB_CONTROL'
   | 'PAGE_CONTROL';
 
@@ -84,6 +88,13 @@ interface RulesPayload {
 /** 扫描触发 payload */
 interface ScanPayload {
   category?: string;
+}
+
+/** 行为测试 payload */
+interface BehaviorTestPayload {
+  url: string;
+  testType: TestType;
+  path?: OperationPath;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -172,23 +183,16 @@ function setupStorageForwarding(): void {
     chrome.tabs.query({}, (tabs) => {
       for (const tab of tabs) {
         if (tab.id == null) continue;
-        // 跳过浏览器内部页面，这些页面无法注入 content script
-        if (tab.url && (tab.url.startsWith('chrome://') || tab.url.startsWith('edge://') || tab.url.startsWith('about:'))) {
-          continue;
-        }
-        chrome.tabs.sendMessage(
-          tab.id,
-          {
+        try {
+          chrome.tabs.sendMessage(tab.id, {
             type: 'AA_STORAGE_CHANGED',
             payload,
             timestamp: Date.now(),
             source: 'background',
-          },
-          () => {
-            // content script 可能未注入，忽略 lastError
-            void chrome.runtime.lastError;
-          },
-        );
+          });
+        } catch {
+          // content script 可能未注入，忽略
+        }
       }
     });
   });
@@ -292,6 +296,22 @@ async function handleInternalMessage(
     case 'AA_GENERATE_BRIDGE_TOKEN': {
       const token: string = await authManager.generateBridgeToken();
       return token;
+    }
+    case 'AA_DISCOVER_PATHS': {
+      const { url, testType } = (message.payload ?? {}) as BehaviorTestPayload;
+      if (!url || !testType) {
+        throw new Error('AA_DISCOVER_PATHS 缺少 url 或 testType');
+      }
+      const paths: OperationPath[] = await scanService.discoverPaths(url, testType);
+      return paths;
+    }
+    case 'AA_EXECUTE_BEHAVIOR_TEST': {
+      const { url, testType, path } = (message.payload ?? {}) as BehaviorTestPayload;
+      if (!url || !testType || !path) {
+        throw new Error('AA_EXECUTE_BEHAVIOR_TEST 缺少 url / testType / path');
+      }
+      const result = await scanService.executeBehaviorTest(url, testType, path);
+      return result;
     }
     default: {
       throw new Error(`未知的消息类型：${message.type}`);

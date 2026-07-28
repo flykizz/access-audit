@@ -48,7 +48,7 @@ jobs:
           else
             BROWSER_DIR="firefox-mv2"
           fi
-          MANIFEST="packages/browser-extension/dist/$BROWSER_DIR/manifest.json"
+          MANIFEST="packages/browser-extension/.output/$BROWSER_DIR/manifest.json"
           if [ ! -f "$MANIFEST" ]; then
             echo "Error: manifest.json not found"
             exit 1
@@ -60,5 +60,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: extension-${{ matrix.browser }}
-          path: packages/browser-extension/dist/
+          path: packages/browser-extension/.output/
           retention-days: 7

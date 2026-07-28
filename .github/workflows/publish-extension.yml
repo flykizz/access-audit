@@ -55,7 +55,7 @@ jobs:
       - name: Verify manifest
         run: |
           # 验证 manifest.json 存在且 version 正确
-          MANIFEST="packages/browser-extension/dist/chrome-mv3/manifest.json"
+          MANIFEST="packages/browser-extension/.output/chrome-mv3/manifest.json"
           if [ ! -f "$MANIFEST" ]; then
             echo "Error: manifest.json not found at $MANIFEST"
             exit 1
@@ -68,7 +68,7 @@ jobs:
           fi
 
       - name: Package extension
-        working-directory: packages/browser-extension/dist/chrome-mv3
+        working-directory: packages/browser-extension/.output/chrome-mv3
         run: |
           # 打包 zip（manifest.json 必须在根目录）
           zip -r ../../accessaudit-${{ steps.version.outputs.version }}.zip . \

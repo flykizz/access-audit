@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PageAgent } from '@accessaudit/core';
-import type { BehaviorResult, BehaviorTask, TestType } from '@accessaudit/core';
+import type { BehaviorResult, BehaviorTask, TestType, OperationPath, BehaviorTestResult } from '@accessaudit/core';
 
 interface BehaviorTestOptions {
   url: string;
@@ -21,6 +21,17 @@ interface BatchTestResult {
   passed: number;
   failed: number;
   results: { testType: TestType; status: 'pass' | 'fail' }[];
+}
+
+interface PathDiscoveryOptions {
+  url: string;
+  testType: TestType;
+}
+
+interface PathExecutionOptions {
+  url: string;
+  testType: TestType;
+  path: OperationPath;
 }
 
 @Injectable()
@@ -57,6 +68,26 @@ export class AgentService {
       failed: options.tests.length - passed,
       results,
     };
+  }
+
+  async discoverPaths(options: PathDiscoveryOptions): Promise<OperationPath[]> {
+    const agent = new PageAgent();
+    try {
+      const paths = await agent.discoverPaths(options.url, options.testType);
+      return paths;
+    } finally {
+      await agent.close();
+    }
+  }
+
+  async executePath(options: PathExecutionOptions): Promise<BehaviorTestResult> {
+    const agent = new PageAgent();
+    try {
+      const result = await agent.executePath(options.path, options.testType);
+      return result;
+    } finally {
+      await agent.close();
+    }
   }
 
   private getTestTypeName(testType: string): string {

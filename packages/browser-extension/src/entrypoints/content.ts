@@ -37,6 +37,10 @@ let overlayVisible = true;
 let overlayRoot: HTMLDivElement | null = null;
 /** 标记是否已注入 main-world.js（避免重复注入） */
 let mainWorldInjected = false;
+/** 当前高亮的行为测试步骤 */
+let currentBehaviorStep: { stepName: string; action: string; selector?: string } | null = null;
+/** 行为测试执行进度 */
+let behaviorTestProgress: { current: number; total: number; status: string } | null = null;
 
 /* -------------------------------------------------------------------------- */
 /* WXT 入口                                                                     */
@@ -165,14 +169,44 @@ function onRuntimeMessage(
 
     /* -------- 认证状态变更 -------- */
     case 'AA_AUTH_CHANGED': {
-      // 认证状态变化时，重新校验 bridge token 并按需注入 main-world
       void validateAndInjectMainWorld();
+      return false;
+    }
+
+    /* -------- 行为测试：高亮当前操作元素 -------- */
+    case 'AA_BEHAVIOR_STEP_START': {
+      const { stepName, action, selector } = message.payload ?? {};
+      currentBehaviorStep = { stepName, action, selector };
+      highlightBehaviorElement(selector, stepName, action);
+      return false;
+    }
+
+    /* -------- 行为测试：步骤完成 -------- */
+    case 'AA_BEHAVIOR_STEP_COMPLETE': {
+      clearBehaviorHighlight();
+      currentBehaviorStep = null;
+      return false;
+    }
+
+    /* -------- 行为测试：更新执行进度 -------- */
+    case 'AA_BEHAVIOR_PROGRESS': {
+      const { current, total, status } = message.payload ?? {};
+      behaviorTestProgress = { current, total, status };
+      renderBehaviorProgress();
+      return false;
+    }
+
+    /* -------- 行为测试：清除进度指示器 -------- */
+    case 'AA_BEHAVIOR_CLEAR': {
+      behaviorTestProgress = null;
+      clearBehaviorProgress();
+      clearBehaviorHighlight();
+      currentBehaviorStep = null;
       return false;
     }
 
     /* -------- storage 变化（background 转发） -------- */
     case 'AA_STORAGE_CHANGED': {
-      // 若扫描状态变化，可触发标记重渲染（sidepanel 关闭后重开场景）
       const changes = message.payload ?? {};
       if (changes[StorageKeys.CURRENT_SCAN]) {
         const scanState = changes[StorageKeys.CURRENT_SCAN].newValue;
@@ -464,4 +498,120 @@ function respondToMainWorld(
     },
     '*',
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/* 行为测试可视化标记                                                            */
+/* -------------------------------------------------------------------------- */
+
+/** 行为测试高亮元素的 class */
+const BEHAVIOR_HIGHLIGHT_CLASS = 'accessaudit-behavior-highlight';
+/** 行为测试步骤提示框的 class */
+const BEHAVIOR_TOOLTIP_CLASS = 'accessaudit-behavior-tooltip';
+/** 行为测试进度指示器的 class */
+const BEHAVIOR_PROGRESS_CLASS = 'accessaudit-behavior-progress';
+
+/**
+ * 高亮行为测试当前操作的元素
+ * @param selector - CSS 选择器
+ * @param stepName - 步骤名称
+ * @param action - 操作类型
+ */
+function highlightBehaviorElement(selector?: string, stepName?: string, action?: string): void {
+  clearBehaviorHighlight();
+
+  if (!selector || !overlayRoot) return;
+
+  let target: Element | null = null;
+  try {
+    target = document.querySelector(selector);
+  } catch {
+    return;
+  }
+
+  if (!target) return;
+
+  const rect = target.getBoundingClientRect();
+  const htmlTarget = target as HTMLElement;
+
+  htmlTarget.classList.add(BEHAVIOR_HIGHLIGHT_CLASS);
+
+  const tooltip = document.createElement('div');
+  tooltip.className = BEHAVIOR_TOOLTIP_CLASS;
+  tooltip.innerHTML = `
+    <div class="accessaudit-behavior-tooltip-action">${getActionLabel(action)}</div>
+    <div class="accessaudit-behavior-tooltip-step">${stepName}</div>
+  `;
+
+  Object.assign(tooltip.style, {
+    position: 'fixed',
+    left: `${Math.min(rect.left, window.innerWidth - 200)}px`,
+    top: `${rect.top - 60}px`,
+    zIndex: '2147483647',
+    pointerEvents: 'none',
+  });
+
+  overlayRoot.appendChild(tooltip);
+}
+
+/**
+ * 清除行为测试高亮
+ */
+function clearBehaviorHighlight(): void {
+  const highlighted = document.querySelector(`.${BEHAVIOR_HIGHLIGHT_CLASS}`);
+  if (highlighted) {
+    highlighted.classList.remove(BEHAVIOR_HIGHLIGHT_CLASS);
+  }
+
+  if (!overlayRoot) return;
+  const tooltips = overlayRoot.querySelectorAll(`.${BEHAVIOR_TOOLTIP_CLASS}`);
+  tooltips.forEach((t) => t.remove());
+}
+
+/**
+ * 渲染行为测试进度指示器
+ */
+function renderBehaviorProgress(): void {
+  clearBehaviorProgress();
+  if (!behaviorTestProgress || !overlayRoot) return;
+
+  const { current, total, status } = behaviorTestProgress;
+  const progress = total > 0 ? (current / total) * 100 : 0;
+
+  const progressEl = document.createElement('div');
+  progressEl.className = BEHAVIOR_PROGRESS_CLASS;
+  progressEl.innerHTML = `
+    <div class="accessaudit-behavior-progress-spinner"></div>
+    <div class="accessaudit-behavior-progress-text">${status}</div>
+    <div class="accessaudit-behavior-progress-bar">
+      <div class="accessaudit-behavior-progress-bar-fill" style="width: ${progress}%"></div>
+    </div>
+    <div class="accessaudit-behavior-progress-count">${current}/${total}</div>
+  `;
+
+  overlayRoot.appendChild(progressEl);
+}
+
+/**
+ * 清除行为测试进度指示器
+ */
+function clearBehaviorProgress(): void {
+  if (!overlayRoot) return;
+  const progressEls = overlayRoot.querySelectorAll(`.${BEHAVIOR_PROGRESS_CLASS}`);
+  progressEls.forEach((p) => p.remove());
+}
+
+/**
+ * 获取操作类型的中文标签
+ */
+function getActionLabel(action?: string): string {
+  const labels: Record<string, string> = {
+    click: '点击',
+    type: '输入',
+    focus: '聚焦',
+    press: '按键',
+    wait: '等待',
+    navigate: '导航',
+  };
+  return labels[action || ''] || action || '操作';
 }

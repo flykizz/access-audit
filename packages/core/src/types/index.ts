@@ -69,6 +69,55 @@ export interface PathDiscoveryResult {
   pathCoverage: number;
 }
 
+export interface OperationPath {
+  id: string;
+  name: string;
+  description: string;
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  estimatedTime: number;
+  steps: OperationStep[];
+  aiConfidence: number;
+  aiReasoning: string;
+}
+
+export interface OperationStep {
+  id: string;
+  name: string;
+  description: string;
+  action: 'click' | 'type' | 'focus' | 'press' | 'wait' | 'navigate';
+  selector?: string;
+  value?: string;
+  targetUrl?: string;
+  timeout?: number;
+  expectedResult?: string;
+}
+
+export interface ExecutionLog {
+  stepId: string;
+  stepName: string;
+  action: string;
+  selector?: string;
+  timestamp: number;
+  duration: number;
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
+  screenshot?: string;
+  error?: string;
+  actualResult?: string;
+  domSnapshot?: string;
+}
+
+export interface BehaviorTestResult {
+  testType: TestType;
+  targetElement: string;
+  status: 'pass' | 'fail' | 'error' | 'unknown';
+  expectedBehavior: string;
+  actualBehavior: string;
+  llmInsight?: string;
+  fixSuggestion?: string;
+  executionLogs: ExecutionLog[];
+  pathId?: string;
+}
+
 export interface AuditConfig {
   includeStaticScan: boolean;
   includeBehaviorTest: boolean;
